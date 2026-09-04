@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 
 export type Theme = 'light' | 'dusk' | 'night'
 
-const KEY = 'portovanta:theme'
+const KEY = 'pansuan:theme'
 
 export const THEMES: { key: Theme; label: string; glyph: string }[] = [
   { key: 'light', label: 'สว่าง', glyph: '☀' },

@@ -4,7 +4,7 @@ import { emptyPortfolio, ROOT_ID } from './portfolio'
 import { PALETTE, ROOT_COLOR } from '../lib/palette'
 import { uid } from '../lib/id'
 
-const KEY = 'portovanta:portfolio:v1'
+const KEY = 'pansuan:portfolio:v1'
 
 export function loadPortfolio(): Portfolio | null {
   try {
@@ -96,13 +96,13 @@ function slug(name: string): string {
       .trim()
       .replace(/[\\/:*?"<>|]+/g, '')
       .replace(/\s+/g, '-')
-      .slice(0, 48) || 'portovanta'
+      .slice(0, 48) || 'pansuan'
   )
 }
 
 export function exportJson(portfolio: Portfolio): void {
   const payload = JSON.stringify({ ...portfolio, exportedAt: new Date().toISOString() }, null, 2)
-  download(new Blob([payload], { type: 'application/json' }), `${slug(portfolio.name)}.portovanta.json`)
+  download(new Blob([payload], { type: 'application/json' }), `${slug(portfolio.name)}.pansuan.json`)
 }
 
 const EXPORT_PAD = 28

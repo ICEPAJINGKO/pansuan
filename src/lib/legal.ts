@@ -1,7 +1,7 @@
 /**
  * Ownership of the app, in one place.
  *
- * The notice covers Portovanta itself — not the libraries it is built on.
+ * The notice covers Pansuan itself — not the libraries it is built on.
  * React, React-DOM and scheduler ship inside the bundle under the MIT licence
  * and keep their own copyright; a notice here neither claims nor cancels those.
  */

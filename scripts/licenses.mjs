@@ -46,10 +46,10 @@ const found = collect(Object.keys(root.dependencies ?? {}))
 const parts = [
   'THIRD-PARTY NOTICES',
   '',
-  `Portovanta bundles the open-source packages listed below. Each keeps its own`,
+  `Pansuan bundles the open-source packages listed below. Each keeps its own`,
   `copyright and licence; the notices are reproduced here because their licences`,
   `require it. Nothing in this file limits the rights of those copyright holders,`,
-  `and nothing here is claimed by the Portovanta copyright holder.`,
+  `and nothing here is claimed by the Pansuan copyright holder.`,
   '',
   `Generated from the installed dependency tree — regenerate with: npm run licenses`,
   '',

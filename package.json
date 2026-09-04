@@ -1,9 +1,9 @@
 {
-  "name": "portovanta",
+  "name": "pansuan",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Portovanta — plan your investment portfolio as a living Sankey diagram.",
+  "description": "Pansuan (ปันส่วน) — plan your investment portfolio as a living Sankey diagram.",
   "engines": {
     "node": ">=22.12.0"
   },

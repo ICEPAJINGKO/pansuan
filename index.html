@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <meta name="theme-color" content="#04050c" />
-    <meta name="description" content="Portovanta — จัดพอร์ตการลงทุนด้วย Sankey Diagram" />
+    <meta name="description" content="Pansuan (ปันส่วน) — จัดพอร์ตการลงทุนด้วย Sankey Diagram" />
     <meta name="author" content="ICEPAJINGKO" />
     <meta name="copyright" content="© 2026 ICEPAJINGKO. All rights reserved." />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400..700&family=IBM+Plex+Sans+Thai:wght@400;600&family=JetBrains+Mono:wght@400..500&display=swap"
       rel="stylesheet"
     />
-    <title>Portovanta · Portfolio Flow</title>
+    <title>Pansuan · ปันส่วน</title>
     <script>
       (function () {
         var root = document.documentElement
@@ -22,7 +22,7 @@
         // Theme before first paint, so there is no flash of the wrong tone.
         var saved = null
         try {
-          saved = localStorage.getItem('portovanta:theme')
+          saved = localStorage.getItem('pansuan:theme')
         } catch (e) {}
         if (saved !== 'light' && saved !== 'dusk' && saved !== 'night') {
           saved = matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dusk'

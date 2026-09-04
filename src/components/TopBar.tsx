@@ -31,7 +31,7 @@ export function TopBar({ portfolio, api, svgRef, onSelect, theme }: Props) {
       onSelect(null)
       flash(`นำเข้า “${next.name}” แล้ว`)
     } catch {
-      flash('ไฟล์ไม่ถูกต้อง — ต้องเป็น JSON ที่ export จาก Portovanta')
+      flash('ไฟล์ไม่ถูกต้อง — ต้องเป็น JSON ที่ export จาก Pansuan')
     }
   }
 
@@ -40,7 +40,7 @@ export function TopBar({ portfolio, api, svgRef, onSelect, theme }: Props) {
       <div className="brand">
         <span className="brand-mark" aria-hidden="true" />
         <span className="brand-name">
-          Porto<em>vanta</em>
+          Pan<em>suan</em>
         </span>
       </div>
 
