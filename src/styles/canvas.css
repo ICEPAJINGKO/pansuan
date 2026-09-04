@@ -1,0 +1,486 @@
+.canvas-wrap {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: radial-gradient(120% 100% at 50% 0%, var(--canvas-top), var(--canvas-bottom));
+  box-shadow: var(--shadow), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  overflow: hidden;
+  cursor: grab;
+  contain: layout paint;
+}
+
+.canvas-wrap.is-panning {
+  cursor: grabbing;
+}
+
+.sankey {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+}
+
+/*
+ * The name of the thing, set as wallpaper behind it. Big, nearly invisible, and
+ * out of the way of every pointer — it is scenery, not an element.
+ */
+.canvas-title {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 0;
+  max-width: 92%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: clamp(40px, 7.5vw, 122px);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  color: rgb(var(--tint) / 0.075);
+  pointer-events: none;
+  user-select: none;
+}
+
+/* ---------- ribbons ---------- */
+
+/*
+ * No mix-blend-mode here on purpose: screen blending forces the compositor to
+ * read the backdrop for every ribbon, which is one of the most expensive things
+ * a mobile GPU can be asked to do. Plain alpha over the dark ground looks the
+ * same and costs nothing.
+ */
+.sk-link {
+  opacity: var(--ribbon);
+  transition: opacity 0.18s ease;
+  animation: linkIn 0.45s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  pointer-events: none;
+}
+
+.sk-link.is-dim {
+  opacity: var(--dim-link);
+}
+
+@keyframes linkIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ---------- nodes ---------- */
+
+.sk-node {
+  animation: nodeIn 0.4s cubic-bezier(0.22, 0.9, 0.3, 1) both;
+  transition: opacity 0.18s ease;
+}
+
+@keyframes nodeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+.sk-node.is-dim {
+  opacity: var(--dim-node);
+}
+
+.sk-bar {
+  transition: filter 0.18s ease;
+  filter: drop-shadow(0 10px 22px rgb(0 0 0 / 0.45));
+}
+
+.sk-node:hover .sk-bar,
+.sk-node.is-selected .sk-bar {
+  filter: drop-shadow(0 12px 26px rgb(0 0 0 / 0.5)) drop-shadow(0 0 14px currentColor);
+}
+
+.sk-node.is-selected .sk-bar {
+  stroke: rgb(255 255 255 / 0.85);
+  stroke-width: 2;
+}
+
+/* Hatches the unallocated slice so it reads as empty on any bar colour. The
+ * fill is a pattern set on the element itself — a rule here would win over it. */
+.sk-rem {
+  pointer-events: none;
+}
+
+.sk-node.is-over .sk-bar {
+  stroke: var(--warn);
+  stroke-width: 1.5;
+  stroke-opacity: 0.9;
+}
+
+.sk-label {
+  pointer-events: none;
+}
+
+/*
+ * Three lines set on the card itself. They sit on a saturated fill in every
+ * theme, so the ink is white here rather than a theme token — and no halo,
+ * because there is no busy background left to lift them off.
+ */
+.sk-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sk-value {
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.sk-sub {
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.sk-hit {
+  cursor: pointer;
+}
+
+/* ---------- overlays ---------- */
+
+.sk-tip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  min-width: 178px;
+  max-width: 250px;
+  padding: 9px 11px;
+  border-radius: 11px;
+  border: 1px solid var(--border-strong);
+  background: var(--overlay);
+  backdrop-filter: var(--glass);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.14s ease;
+  z-index: 6;
+}
+
+.sk-tip[data-show='1'] {
+  opacity: 1;
+}
+
+.sk-tip.flip-x {
+  margin-left: -290px;
+}
+
+.sk-tip.flip-y {
+  margin-top: -150px;
+}
+
+.sk-tip-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.sk-tip-head .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.sk-tip-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-mute);
+  line-height: 1.7;
+}
+
+.sk-tip-row b {
+  font-family: var(--mono);
+  font-weight: 500;
+  color: var(--text);
+}
+
+.sk-tip-row.is-warn b {
+  color: var(--warn);
+}
+
+.canvas-controls {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--overlay);
+  backdrop-filter: var(--glass);
+  z-index: 5;
+}
+
+.zoom-label {
+  min-width: 48px;
+  height: 28px;
+  border-radius: 7px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-dim);
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.zoom-label:hover {
+  background: rgb(var(--tint) / 0.14);
+  color: var(--text);
+}
+
+.canvas-hint {
+  position: absolute;
+  left: 14px;
+  bottom: 15px;
+  font-size: 11px;
+  color: var(--text-mute);
+  pointer-events: none;
+  opacity: 0.75;
+  max-width: 60%;
+  z-index: 4;
+}
+
+.canvas-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.canvas-empty-card {
+  pointer-events: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  max-width: 320px;
+  padding: 24px 26px;
+  text-align: center;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--overlay);
+  backdrop-filter: var(--glass);
+  box-shadow: var(--shadow);
+}
+
+.canvas-empty-card h2 {
+  font-size: 17px;
+}
+
+.canvas-empty-card p {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-mute);
+  line-height: 1.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sk-link,
+  .sk-node {
+    animation: none;
+  }
+  * {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ---------- moving a node onto another ---------- */
+
+body.is-moving-node,
+body.is-moving-node * {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+/* The hover card would only fight the tile riding the pointer. */
+body.is-moving-node .sk-tip {
+  opacity: 0;
+}
+
+.sk-node.is-dragging,
+.tree-item.is-dragging {
+  opacity: 0.55;
+}
+
+/* Where it will land, held open in the list while the drag is in flight. */
+.tree-item.is-dragging > .tree-row {
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+
+.sk-node.is-dragging .sk-bar {
+  stroke: var(--text);
+  stroke-width: 1.5;
+  stroke-opacity: 0.6;
+  stroke-dasharray: 4 3;
+}
+
+/* The landing spot, called out while a drag is in flight. */
+.sk-node.is-drop-target .sk-bar {
+  stroke: var(--accent-2);
+  stroke-width: 2.5;
+  stroke-opacity: 1;
+  filter: drop-shadow(0 0 10px var(--accent-2));
+}
+
+.sk-node.is-drop-target .sk-name {
+  fill: var(--accent-2);
+}
+
+/*
+ * The tile that rides the pointer. It is positioned by transform alone, so the
+ * whole drag stays on the compositor, and it must never swallow a hit test —
+ * the drop target is found with elementFromPoint straight underneath it.
+ */
+/* An author `display` beats the browser's own [hidden] rule, so say it here. */
+.drag-ghost[hidden] {
+  display: none;
+}
+
+.drag-ghost {
+  position: fixed;
+  top: 0;
+  left: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 9px;
+  max-width: 290px;
+  padding: 8px 13px 8px 9px;
+  border-radius: 12px;
+  border: 1px solid var(--border-strong);
+  background: var(--overlay);
+  backdrop-filter: var(--glass);
+  box-shadow: var(--shadow);
+  pointer-events: none;
+  z-index: 30;
+  will-change: transform;
+}
+
+.ghost-bar {
+  flex: none;
+  width: 5px;
+  border-radius: 3px;
+  box-shadow: 0 0 10px currentColor;
+}
+
+.ghost-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.ghost-head {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  min-width: 0;
+}
+
+.ghost-name {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ghost-count {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 26%, transparent);
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.ghost-value {
+  flex: none;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+/*
+ * The one line that says what the drop will do. The two answers never look
+ * alike: going inside another node is one colour, taking a place among its
+ * neighbours is the other, and each carries its own arrow.
+ */
+.ghost-drop {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+
+.ghost-drop::before {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.drag-ghost.is-into .ghost-drop {
+  color: var(--accent-2);
+}
+
+.drag-ghost.is-into .ghost-drop::before {
+  content: '↳';
+}
+
+.drag-ghost.is-order .ghost-drop {
+  color: var(--accent);
+}
+
+.drag-ghost.is-order .ghost-drop::before {
+  content: '↕';
+}
+
+.drag-ghost.is-into {
+  border-color: color-mix(in srgb, var(--accent-2) 55%, var(--border-strong));
+}
+
+.drag-ghost.is-order {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border-strong));
+}
+
+/* ---------- rubber-band selection ---------- */
+
+.marquee {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  pointer-events: none;
+  z-index: 6;
+  will-change: transform, width, height;
+}
+
+/* Caught by the band, not committed yet. */
+.sk-node.is-marquee-hit .sk-bar {
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-opacity: 0.95;
+}

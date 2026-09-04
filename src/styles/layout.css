@@ -1,0 +1,236 @@
+.app {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  isolation: isolate;
+}
+
+/*
+ * Starfield: three repeating vector tiles. Everything that moves is a
+ * transform or an opacity, so the whole background lives on the compositor
+ * and costs the main thread nothing after first paint.
+ */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  contain: layout paint style;
+}
+
+.star-layer {
+  position: absolute;
+  inset: 0;
+  transform: translate3d(calc(var(--vp-x, 0px) * var(--p)), calc(var(--vp-y, 0px) * var(--p)), 0);
+}
+
+.star-drift {
+  position: absolute;
+  inset: -1px calc(var(--tile) * -1) -1px 0;
+  background-repeat: repeat;
+  animation:
+    star-drift var(--drift) linear infinite,
+    star-twinkle var(--twinkle) ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+@keyframes star-drift {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(var(--tile), 0, 0);
+  }
+}
+
+@keyframes star-twinkle {
+  from {
+    opacity: calc(var(--star-opacity) * 0.6);
+  }
+  to {
+    opacity: var(--star-opacity);
+  }
+}
+
+.shooting-star {
+  position: absolute;
+  width: 92px;
+  height: 1px;
+  border-radius: 1px;
+  opacity: 0;
+  will-change: transform, opacity;
+}
+
+.shooting-star.from-l {
+  left: -120px;
+  background: linear-gradient(90deg, transparent, var(--shoot));
+  animation: shoot-l 1.5s cubic-bezier(0.4, 0, 0.9, 0.6) forwards;
+}
+
+.shooting-star.from-r {
+  right: -120px;
+  background: linear-gradient(270deg, transparent, var(--shoot));
+  animation: shoot-r 1.5s cubic-bezier(0.4, 0, 0.9, 0.6) forwards;
+}
+
+@keyframes shoot-l {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(78vw, 30vh, 0);
+    opacity: 0;
+  }
+}
+
+@keyframes shoot-r {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translate3d(-78vw, 30vh, 0);
+    opacity: 0;
+  }
+}
+
+/* Deep-space wash behind everything. Static, so it costs nothing per frame. */
+.nebula {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(1100px 700px at 12% -8%, var(--nebula-a), transparent 62%),
+    radial-gradient(900px 620px at 88% 4%, var(--nebula-b), transparent 60%),
+    radial-gradient(1000px 800px at 62% 108%, var(--nebula-c), transparent 64%),
+    radial-gradient(700px 500px at 5% 92%, var(--nebula-d), transparent 62%),
+    var(--bg);
+}
+
+/* ---------- top bar ---------- */
+
+.topbar {
+  position: relative;
+  min-width: 0;
+  min-height: 54px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--topbar);
+  backdrop-filter: var(--glass);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding-right: 4px;
+}
+
+.brand-mark {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 18px var(--brand-glow);
+  position: relative;
+}
+
+.brand-mark::after {
+  content: '';
+  position: absolute;
+  inset: 5px 5px auto 5px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgb(255 255 255 / 0.88);
+  box-shadow: 0 5px 0 rgb(255 255 255 / 0.58), 0 10px 0 rgb(255 255 255 / 0.32);
+}
+
+.brand-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+
+.brand-name em {
+  font-style: normal;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.portfolio-name {
+  flex: 0 1 260px;
+  height: 30px;
+  font-weight: 500;
+  background: transparent;
+  border-color: transparent;
+}
+
+.portfolio-name:hover {
+  background: rgb(var(--sink) / 0.55);
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.template-select {
+  height: 32px;
+  max-width: 150px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.toast {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-strong);
+  background: var(--overlay);
+  box-shadow: var(--shadow);
+  font-size: 13px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+  z-index: 40;
+}
+
+.toast.is-show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---------- workspace ---------- */
+
+.workspace {
+  position: relative;
+  min-width: 0;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 336px minmax(0, 1fr) 312px;
+  gap: 12px;
+  padding: 12px;
+  min-height: 0;
+}

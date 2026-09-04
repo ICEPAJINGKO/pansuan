@@ -1,0 +1,9 @@
+# Keep line endings identical everywhere. Without this, core.autocrlf=true on
+# Windows rewrites every file to CRLF on checkout, and the same repo opened on
+# macOS or Linux then reports all 47 files as modified before anyone edits one.
+* text=auto eol=lf
+
+# Never let the above touch binaries.
+*.png binary
+*.jpg binary
+*.ico binary

@@ -1,0 +1,149 @@
+/*
+ * Loaded last on purpose: these rules override the panel defaults, and the
+ * cascade — not specificity gymnastics — is what settles the conflict.
+ */
+
+/* No room for the inspector — the diagram keeps the space instead. */
+@media (max-width: 1240px) {
+  .workspace {
+    grid-template-columns: 304px minmax(0, 1fr);
+  }
+  .panel-right {
+    display: none;
+  }
+
+  .canvas-hint {
+    display: none;
+  }
+}
+
+/* Stack: diagram on top, editor underneath. */
+@media (max-width: 860px) {
+  .topbar {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 7px 10px 9px;
+    row-gap: 8px;
+  }
+
+  .portfolio-name {
+    flex: 1 1 110px;
+  }
+
+  .topbar-actions {
+    order: 3;
+    width: 100%;
+    margin-left: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .topbar-actions::-webkit-scrollbar {
+    display: none;
+  }
+
+  .topbar-actions > * {
+    flex: none;
+  }
+
+  .template-select {
+    max-width: 118px;
+  }
+
+  .workspace {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(200px, 45vh) minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+  }
+
+  .panel-left {
+    order: 2;
+  }
+
+  .canvas-wrap {
+    order: 1;
+  }
+
+  .canvas-controls {
+    right: 8px;
+    bottom: 8px;
+  }
+
+  .toast {
+    max-width: calc(100vw - 32px);
+    text-align: center;
+  }
+}
+
+/* Touch input has no hover, so row actions must always be reachable. */
+@media (hover: none) {
+  .row-actions {
+    opacity: 1;
+  }
+}
+
+/*
+ * Glass is the single most expensive thing on the page: backdrop-filter forces
+ * the compositor to re-blur everything behind five large panels. Where it is
+ * likely to cost more than it gives, swap it for a slightly more opaque
+ * surface — the panels still read as layered, at zero GPU cost.
+ */
+@media (max-width: 860px), (update: slow), (prefers-reduced-transparency: reduce) {
+  :root {
+    --glass: none;
+    --surface: var(--surface-solid);
+    --topbar: var(--topbar-solid);
+  }
+}
+
+/* Set by the boot script in index.html on low-memory / low-core devices. */
+.lite {
+  --glass: none;
+  --surface: var(--surface-solid);
+  --topbar: var(--topbar-solid);
+}
+
+/* Motion is opt-out: the starfield stops moving, nothing else changes. */
+@media (prefers-reduced-motion: reduce) {
+  .star-drift {
+    animation: none;
+  }
+
+  .shooting-star {
+    display: none;
+  }
+}
+
+/*
+ * Lite surfaces: one star layer instead of three (each animated layer is a
+ * viewport-sized compositor texture), and no SVG drop-shadow on focus — the
+ * white outline already marks the selection.
+ */
+@media (max-width: 860px), (update: slow) {
+  .star-layer:not(:nth-child(2)) {
+    display: none;
+  }
+
+  .sk-node:hover .sk-bar,
+  .sk-node.is-selected .sk-bar {
+    filter: none;
+  }
+}
+
+.lite .star-layer:not(:nth-child(2)) {
+  display: none;
+}
+
+.lite .sk-node:hover .sk-bar,
+.lite .sk-node.is-selected .sk-bar {
+  filter: none;
+}
+
+/* A finger drags a row only by its grip, so the list still scrolls. */
+@media (hover: none) {
+  .grip {
+    touch-action: none;
+    background: rgb(var(--tint) / 0.1);
+  }
+}

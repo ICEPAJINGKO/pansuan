@@ -1,0 +1,709 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  backdrop-filter: var(--glass);
+  box-shadow: var(--shadow), inset 0 1px 0 rgb(255 255 255 / 0.05);
+  overflow: hidden;
+}
+
+.panel-block {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 11px 12px 9px 14px;
+}
+
+.panel-head h2 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.panel-note {
+  margin: -4px 14px 8px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  line-height: 1.4;
+}
+
+.panel-scroll,
+.tree-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 12px 16px;
+}
+
+.tree-scroll {
+  display: flex;
+  flex-direction: column;
+  /* the root drop zone below the list stands in for the bottom padding */
+  padding-bottom: 0;
+}
+
+.panel-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-foot {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
+.stat {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.stat span {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-mute);
+}
+
+.stat b {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* ---------- capital ---------- */
+
+.capital-row {
+  display: flex;
+  gap: 6px;
+}
+
+.capital-input {
+  flex: 1;
+  height: 40px;
+  font-family: var(--mono);
+  font-size: 19px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.currency-select {
+  width: 84px;
+  height: 40px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.allocation-meter {
+  margin-top: 11px;
+}
+
+.meter-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(var(--tint) / 0.14);
+  overflow: hidden;
+}
+
+.meter-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent);
+  transition: width 0.35s cubic-bezier(0.22, 0.9, 0.3, 1);
+}
+
+.allocation-meter.is-over .meter-fill {
+  background: linear-gradient(90deg, var(--warn), var(--danger));
+  box-shadow: 0 0 12px color-mix(in srgb, var(--danger) 45%, transparent);
+}
+
+.meter-legend {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  font-family: var(--mono);
+}
+
+/* ---------- tree ---------- */
+
+.tree {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tree .tree {
+  position: relative;
+}
+
+.tree-empty {
+  margin: 8px 4px;
+  font-size: 12.5px;
+  color: var(--text-mute);
+  line-height: 1.5;
+}
+
+.tree-item {
+  position: relative;
+}
+
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 4px 3px 6px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  transition: background 0.13s ease, border-color 0.13s ease;
+  /* everything but the fields is a grab area */
+  cursor: grab;
+}
+
+.tree-row:hover {
+  background: rgb(var(--tint) / 0.06);
+}
+
+.tree-row.is-selected {
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+}
+
+.tree-row.is-over .value-field {
+  color: var(--warn);
+}
+
+/* ---------- moving a node from the tree ---------- */
+
+/* The node that will hold the drop, called out while a drag is in flight — the
+ * diagram paints its own nodes the same way, so a move reads the same wherever
+ * it started. Where it lands inside that node is shown by the list itself. */
+.tree-item.is-drop-target > .tree-row {
+  background: color-mix(in srgb, var(--accent-2) 16%, transparent);
+  border-color: var(--accent-2);
+}
+
+.tree-root-drop {
+  flex: 1 1 auto;
+  min-height: 46px;
+  margin-top: 8px;
+  display: grid;
+  place-items: center;
+  border: 1px dashed transparent;
+  border-radius: 11px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+body.is-moving-node .tree-root-drop {
+  opacity: 1;
+  border-color: var(--border-strong);
+}
+
+body.is-moving-node .tree-root-drop.is-drop-target {
+  border-color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 12%, transparent);
+  color: var(--accent-2);
+}
+
+.chev {
+  flex: none;
+  width: 16px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  font-size: 10px;
+  color: var(--text-mute);
+  transition: transform 0.16s ease, color 0.13s ease;
+}
+
+.chev:hover {
+  color: var(--text);
+}
+
+.chev.is-collapsed {
+  transform: rotate(-90deg);
+}
+
+.chev.is-leaf {
+  font-size: 8px;
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Dots plus the colour swatch. The swatch alone read as a status light rather
+   than a handle, so the dots carry the "draggable" message and the swatch goes
+   back to being what it always was. */
+.grip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 22px;
+  padding: 0 3px;
+  border-radius: 6px;
+  cursor: grab;
+}
+
+.grip:hover {
+  background: rgb(var(--tint) / 0.12);
+}
+
+.grip:active {
+  cursor: grabbing;
+}
+
+.grip-dots {
+  fill: currentColor;
+  color: var(--text-mute);
+  opacity: 0.5;
+  transition: opacity 0.13s ease, color 0.13s ease;
+}
+
+/* Visible at rest so the affordance is discoverable, brighter under the mouse. */
+.tree-row:hover .grip-dots,
+.tree-row.is-selected .grip-dots {
+  opacity: 1;
+  color: var(--text-dim);
+}
+
+.swatch {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.name-input {
+  flex: 1 1 auto;
+  min-width: 40px;
+  height: 25px;
+  padding: 0 6px;
+  font-size: 13px;
+  background: transparent;
+  border-color: transparent;
+}
+
+.name-input:hover {
+  background: var(--surface-2);
+}
+
+.value-field {
+  flex: none;
+  width: 66px;
+  height: 25px;
+  padding: 0 7px;
+  font-family: var(--mono);
+  font-size: 12px;
+  text-align: right;
+  background: var(--surface-2);
+}
+
+.value-field.is-percent {
+  color: var(--accent-2);
+}
+
+.value-field.is-invalid {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.value-field.big {
+  width: auto;
+  flex: 1;
+  height: 34px;
+  font-size: 16px;
+}
+
+.row-actions {
+  flex: none;
+  display: flex;
+  gap: 1px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.13s ease;
+}
+
+.tree-row:hover .row-actions,
+.tree-row.is-selected .row-actions,
+.tree-row:focus-within .row-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.tree-amount {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-right: 4px;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-dim);
+  margin: -1px 0 4px;
+}
+
+.amount-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Precise moves: one layer up or down, one layer in or out. Parked on the
+   amount line because the row above has no width left to give. */
+.layer-actions {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  opacity: 0;
+  /* Space stays reserved so nothing jumps on hover, but an invisible button
+     must not be clickable. */
+  pointer-events: none;
+  transition: opacity 0.13s ease;
+}
+
+.tree-row:hover ~ .tree-amount .layer-actions,
+.tree-row.is-selected ~ .tree-amount .layer-actions,
+.tree-amount:hover .layer-actions,
+.layer-actions:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.layer-sep {
+  width: 1px;
+  height: 11px;
+  margin: 0 3px;
+  background: var(--border);
+}
+
+/* ---------- inspector ---------- */
+
+.title-input {
+  height: 36px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+}
+
+.swatch-btn {
+  height: 18px;
+  border-radius: 5px;
+  border: 1px solid rgb(var(--tint) / 0.18);
+  transition: transform 0.13s ease, box-shadow 0.13s ease;
+}
+
+.swatch-btn:hover {
+  transform: translateY(-2px) scale(1.08);
+}
+
+.swatch-btn.is-active {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text), 0 0 14px currentColor;
+}
+
+.field-row {
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.mode-toggle {
+  flex: none;
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.mode-toggle button {
+  min-width: 34px;
+  padding: 0 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-mute);
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.mode-toggle button:hover {
+  color: var(--text);
+}
+
+.mode-toggle button.is-active {
+  background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent-2) 80%, transparent));
+  color: #fff;
+}
+
+.readout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgb(var(--sink) / 0.45);
+}
+
+.readout div {
+  min-width: 0;
+}
+
+.readout dt {
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.readout dd {
+  margin: 2px 0 0;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sub-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.sub-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.sub-head h3 {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.mini-list,
+.mix-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mini-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 4px 7px;
+  border-radius: 7px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  transition: background 0.13s ease, color 0.13s ease;
+}
+
+.mini-row:hover {
+  background: rgb(var(--tint) / 0.09);
+  color: var(--text);
+}
+
+.mini-name {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mini-pct {
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+
+.note-input {
+  width: 100%;
+}
+
+/* ---------- asset mix ---------- */
+
+.mix-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 8px;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  transition: color 0.13s ease;
+}
+
+.mix-row:hover {
+  color: var(--text);
+}
+
+.mix-bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  opacity: 0.16;
+  border-radius: 8px;
+  transition: opacity 0.16s ease, width 0.4s cubic-bezier(0.22, 0.9, 0.3, 1);
+  pointer-events: none;
+}
+
+.mix-row:hover .mix-bar {
+  opacity: 0.3;
+}
+
+.mix-bar.ghost {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgb(var(--tint) / 0.5) 0 5px,
+    transparent 5px 10px
+  );
+  opacity: 0.28;
+}
+
+.mix-name {
+  position: relative;
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mix-pct {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text);
+  min-width: 44px;
+  text-align: right;
+}
+
+.mix-amount {
+  position: relative;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--text-mute);
+  min-width: 66px;
+  text-align: right;
+}
+
+.mix-row.is-ghost {
+  color: var(--text-mute);
+}
+
+/* Makes the unit a visible, one-click thing instead of a typing convention. */
+.unit-btn {
+  flex: none;
+  width: 22px;
+  height: 25px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mute);
+  transition: background 0.13s ease, color 0.13s ease, border-color 0.13s ease;
+}
+
+.unit-btn:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: rgb(var(--tint) / 0.14);
+}
+
+.unit-btn.is-percent {
+  color: var(--accent-2);
+}
+
+/* Sits under the tree as the app's only footer — quiet enough to ignore while
+   working, present on every screen. */
+.panel-legal {
+  flex: none;
+  padding: 8px 14px 9px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+.panel-legal small {
+  font-size: 10.5px;
+  letter-spacing: 0.01em;
+  color: var(--text-mute);
+  user-select: text;
+}
+
+.panel-legal {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+}
+
+.panel-legal > span {
+  font-size: 10.5px;
+  color: var(--text-mute);
+  opacity: 0.6;
+}
+
+.legal-link {
+  font-size: 10.5px;
+  color: var(--text-mute);
+  text-decoration: none;
+  border-bottom: 1px dotted currentColor;
+  transition: color 0.13s ease;
+}
+
+.legal-link:hover {
+  color: var(--text-dim);
+}

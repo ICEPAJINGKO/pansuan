@@ -1,0 +1,168 @@
+/*
+ * Every colour in the app resolves through these tokens, so a theme is a block
+ * of custom properties and nothing else — no duplicated rules, no per-component
+ * overrides. Two tokens do most of the work:
+ *
+ *   --tint  foreground-ish RGB, used for borders, hovers and inset lines
+ *   --sink  background-ish RGB, used for input wells and recessed surfaces
+ *
+ * Both are space-separated channels so any rule can pick its own alpha with
+ * rgb(var(--tint) / 0.08).
+ */
+
+/* ---------- dusk: lifted dark, the default ---------- */
+:root,
+:root[data-theme='dusk'] {
+  color-scheme: dark;
+
+  --bg: #0c1128;
+  --tint: 220 228 255;
+  --sink: 10 15 38;
+
+  --surface-glass: rgb(26 34 66 / 0.66);
+  --surface-solid: rgb(24 31 62 / 0.95);
+  --topbar-glass: rgb(16 22 48 / 0.76);
+  --topbar-solid: color-mix(in srgb, var(--bg) 86%, var(--surface-solid));
+  --overlay: rgb(24 32 64 / 0.95);
+
+  --text: #f0f3ff;
+  --text-dim: #b3bde3;
+  --text-mute: #8a95bd;
+
+  --accent: #8f74ff;
+  --accent-2: #3ae0f0;
+  --ok: #47e0a8;
+  --warn: #fdc74a;
+  --danger: #ff8798;
+
+  --shadow: 0 18px 46px rgb(4 7 24 / 0.5);
+  --brand-glow: rgb(143 116 255 / 0.5);
+
+  --canvas-top: rgb(56 70 136 / 0.4);
+  --canvas-bottom: rgb(14 19 46 / 0.5);
+
+  --nebula-a: rgb(124 58 237 / 0.34);
+  --nebula-b: rgb(20 148 184 / 0.26);
+  --nebula-c: rgb(91 43 175 / 0.32);
+  --nebula-d: rgb(214 40 110 / 0.14);
+  --star-opacity: 1;
+  --shoot: rgb(200 220 255 / 0.85);
+
+  --node-root: #eaeeff;
+  --label: #f2f5ff;
+  --label-dim: #aab4dc;
+  --label-faint: #8791b8;
+  --halo: rgb(9 13 34 / 0.82);
+  --empty-fill: rgb(12 17 40 / 0.78);
+  --empty-stroke: rgb(226 232 255 / 0.4);
+  --dim-node: 0.28;
+  --dim-link: 0.09;
+  --ribbon: 0.74;
+  --ribbon-from: 0.5;
+  --ribbon-to: 0.82;
+  --export-bg: #0c1128;
+}
+
+/* ---------- night: the deep-space original ---------- */
+:root[data-theme='night'] {
+  color-scheme: dark;
+
+  --bg: #04050c;
+  --tint: 226 232 255;
+  --sink: 8 11 26;
+
+  --surface-glass: rgb(13 17 36 / 0.62);
+  --surface-solid: rgb(11 15 32 / 0.93);
+  --topbar-glass: rgb(7 10 24 / 0.72);
+  --topbar-solid: color-mix(in srgb, var(--bg) 86%, var(--surface-solid));
+  --overlay: rgb(11 15 33 / 0.94);
+
+  --text: #e7ebff;
+  --text-dim: #9aa6cf;
+  --text-mute: #67728f;
+
+  --accent: #7c5cff;
+  --accent-2: #22d3ee;
+  --ok: #34d399;
+  --warn: #fbbf24;
+  --danger: #fb7185;
+
+  --shadow: 0 18px 48px rgb(2 4 14 / 0.6);
+  --brand-glow: rgb(124 92 255 / 0.55);
+
+  --canvas-top: rgb(30 38 78 / 0.4);
+  --canvas-bottom: rgb(6 9 22 / 0.55);
+
+  --nebula-a: rgb(109 40 217 / 0.3);
+  --nebula-b: rgb(14 116 144 / 0.24);
+  --nebula-c: rgb(76 29 149 / 0.28);
+  --nebula-d: rgb(190 24 93 / 0.12);
+  --star-opacity: 1;
+  --shoot: rgb(200 220 255 / 0.85);
+
+  --node-root: #dfe5ff;
+  --label: #e8ecff;
+  --label-dim: #93a0c8;
+  --label-faint: #6f7ca4;
+  --halo: rgb(4 6 14 / 0.85);
+  --empty-fill: rgb(5 8 20 / 0.82);
+  --empty-stroke: rgb(226 232 255 / 0.34);
+  --dim-node: 0.26;
+  --dim-link: 0.08;
+  --ribbon: 0.7;
+  --ribbon-from: 0.46;
+  --ribbon-to: 0.78;
+  --export-bg: #05060f;
+}
+
+/* ---------- light: daylight nebula ---------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f1f4fd;
+  --tint: 24 31 62;
+  --sink: 255 255 255;
+
+  --surface-glass: rgb(255 255 255 / 0.76);
+  --surface-solid: rgb(255 255 255 / 0.97);
+  --topbar-glass: rgb(255 255 255 / 0.8);
+  --topbar-solid: color-mix(in srgb, var(--bg) 86%, var(--surface-solid));
+  --overlay: rgb(255 255 255 / 0.97);
+
+  --text: #171c34;
+  --text-dim: #4f5878;
+  --text-mute: #79829f;
+
+  --accent: #6d47f5;
+  --accent-2: #0b93b8;
+  --ok: #0d9f6e;
+  --warn: #b45309;
+  --danger: #e11d48;
+
+  --shadow: 0 16px 40px rgb(38 48 92 / 0.12);
+  --brand-glow: rgb(109 71 245 / 0.32);
+
+  --canvas-top: rgb(255 255 255 / 0.72);
+  --canvas-bottom: rgb(223 231 250 / 0.7);
+
+  --nebula-a: rgb(139 92 246 / 0.16);
+  --nebula-b: rgb(34 190 220 / 0.14);
+  --nebula-c: rgb(167 139 250 / 0.15);
+  --nebula-d: rgb(244 114 182 / 0.09);
+  --star-opacity: 0.55;
+  --shoot: rgb(90 110 190 / 0.5);
+
+  --node-root: #3f4c7d;
+  --label: #1b2140;
+  --label-dim: #5b6486;
+  --label-faint: #8a92ad;
+  --halo: rgb(255 255 255 / 0.92);
+  --empty-fill: rgb(255 255 255 / 0.88);
+  --empty-stroke: rgb(24 31 62 / 0.26);
+  --dim-node: 0.5;
+  --dim-link: 0.16;
+  --ribbon: 0.82;
+  --ribbon-from: 0.55;
+  --ribbon-to: 0.86;
+  --export-bg: #f1f4fd;
+}
