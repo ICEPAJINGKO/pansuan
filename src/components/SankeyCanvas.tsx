@@ -836,14 +836,14 @@ export const SankeyCanvas = memo(function SankeyCanvas({
       )}
 
       <div className="canvas-controls" data-export-hide="">
-        <button className="icon-btn" title="ซูมเข้า (+)" onClick={() => zoomAt(1.25, (wrapRef.current?.clientWidth ?? 0) / 2, (wrapRef.current?.clientHeight ?? 0) / 2)}>
+        <button className="icon-btn zoom-btn" title="ซูมเข้า (+)" onClick={() => zoomAt(1.25, (wrapRef.current?.clientWidth ?? 0) / 2, (wrapRef.current?.clientHeight ?? 0) / 2)}>
           +
-        </button>
-        <button className="icon-btn" title="ซูมออก (-)" onClick={() => zoomAt(1 / 1.25, (wrapRef.current?.clientWidth ?? 0) / 2, (wrapRef.current?.clientHeight ?? 0) / 2)}>
-          −
         </button>
         <button className="zoom-label" title="พอดีจอ (F)" onClick={() => fitToView()}>
           {Math.round(zoomLabel * 100)}%
+        </button>
+        <button className="icon-btn zoom-btn" title="ซูมออก (-)" onClick={() => zoomAt(1 / 1.25, (wrapRef.current?.clientWidth ?? 0) / 2, (wrapRef.current?.clientHeight ?? 0) / 2)}>
+          −
         </button>
       </div>
 

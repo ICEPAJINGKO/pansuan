@@ -224,6 +224,16 @@ interface RowProps {
   onDragNode: NodeDragApi['begin']
 }
 
+/* A stroked chevron instead of the "▾" glyph: the character renders thin and
+ * differently per font, so it stayed faint however large the font-size went. */
+function Chevron() {
+  return (
+    <svg className="chev-icon" viewBox="0 0 14 14" width="14" height="14" aria-hidden="true" focusable="false">
+      <path d="M3.4 5.4 7 9l3.6-3.6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 /**
  * Six dots. The colour swatch used to carry the drag on its own, but a dot
  * reads as a status light, not as a handle — this says "grab me" without a
@@ -298,7 +308,7 @@ function Row({
             }
           }}
         >
-          {hasChildren ? '▾' : '•'}
+          {hasChildren ? <Chevron /> : <span className="chev-dot" aria-hidden="true" />}
         </button>
 
         <span className="grip" title="ลากเพื่อจัดลำดับ หรือลากไปทับก้อนอื่นเพื่อย้ายเข้าไปข้างใน">
@@ -373,7 +383,7 @@ function Row({
       {/* The amount line carries the precise-move controls. They live here
           rather than in the row above because the row has no width left, and
           this line is mostly empty. */}
-      <div className="tree-amount" style={{ paddingLeft: indent + 46 }}>
+      <div className="tree-amount" style={{ paddingLeft: indent + 54 }}>
         <span className="amount-text">
           {formatMoney(computed?.amount ?? 0, currency)}
           <span className="muted"> · {formatPercent(computed?.share ?? 0)}</span>

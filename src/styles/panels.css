@@ -238,27 +238,52 @@ body.is-moving-node .tree-root-drop.is-drop-target {
 
 .chev {
   flex: none;
-  width: 16px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   display: grid;
   place-items: center;
-  font-size: 10px;
-  color: var(--text-mute);
-  transition: transform 0.16s ease, color 0.13s ease;
+  border-radius: 7px;
+  color: var(--text-dim);
+  transition: background 0.13s ease, color 0.13s ease;
 }
 
 .chev:hover {
+  background: rgb(var(--tint) / 0.14);
   color: var(--text);
 }
 
-.chev.is-collapsed {
+.chev-icon {
+  transition: transform 0.16s ease;
+}
+
+/* Only the glyph turns — rotating the button would spin its hover box too. */
+.chev.is-collapsed .chev-icon {
   transform: rotate(-90deg);
 }
 
+/* Collapsed means something is hidden underneath, so it stays at full contrast
+ * at rest rather than waiting for a hover to be noticed. */
+.chev.is-collapsed {
+  color: var(--text);
+}
+
+/* A leaf has nothing to toggle: the dot is a spacer that keeps the names in a
+ * column, so it must not offer a button's affordances. */
 .chev.is-leaf {
-  font-size: 8px;
-  opacity: 0.4;
   cursor: default;
+}
+
+.chev.is-leaf:hover {
+  background: none;
+  color: var(--text-dim);
+}
+
+.chev-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.45;
 }
 
 /* Dots plus the colour swatch. The swatch alone read as a status light rather
