@@ -1,0 +1,3 @@
+# Pansuan is a single-page tool — there is nothing else to crawl.
+User-agent: *
+Allow: /

@@ -147,3 +147,46 @@
     background: rgb(var(--tint) / 0.1);
   }
 }
+
+/*
+ * Touch keyboards and the 16px rule.
+ *
+ * iOS Safari zooms the whole page in whenever a focused field's text is under
+ * 16px. The old fix was `maximum-scale=1` in the viewport meta, which stopped
+ * that by taking pinch-zoom away from everyone — and an app whose entire
+ * content is numbers is exactly the kind that fails WCAG 1.4.4 when it does.
+ * Raising the fields treats the cause instead, so zoom stays available to
+ * anyone who needs to magnify a figure.
+ *
+ * The fields are named one at a time on purpose. A blanket
+ * `input, select, textarea` rule loses to `.name-input` and `.value-field` on
+ * specificity whichever file it sits in — measured, not assumed — so the two
+ * fields that matter most would have gone on zooming the page. Selects are left
+ * alone: iOS opens a picker for those and never zooms.
+ *
+ * The controls have to grow with the type or the value clips, so the dense tree
+ * row gets a little taller on touch — where it wants to be anyway, since a
+ * finger needs a bigger target than a cursor does.
+ */
+@media (hover: none) {
+  .name-input,
+  .value-field,
+  .portfolio-name,
+  .note-input {
+    font-size: 16px;
+  }
+
+  .name-input,
+  .value-field,
+  .unit-btn {
+    height: 30px;
+  }
+
+  .value-field {
+    width: 84px;
+  }
+
+  .portfolio-name {
+    height: 34px;
+  }
+}

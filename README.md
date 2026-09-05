@@ -162,7 +162,7 @@ src/
 ตอนไม่มีใครแตะ หน้าเว็บไม่รันโค้ดเลยแม้แต่บรรทัดเดียว — ที่ยังขยับอยู่คือ compositor ล้วน ๆ
 ส่วนการลากยังเท่าเดิมคือตรง vsync ทุกเฟรม
 
-ขนาดที่ส่งจริง: JS 76.5 KB gzip · CSS 5.2 KB gzip · ฟอนต์เหลือ 4 ไฟล์ (variable font สองตระกูล)
+ขนาดที่ส่งจริง: JS 83.3 KB gzip · CSS 7.4 KB gzip · ฟอนต์เหลือ 4 ไฟล์ (variable font สองตระกูล)
 
 ## กติกาของการย้ายและการเฉลี่ย
 
@@ -198,6 +198,27 @@ src/
   สองปุ่มหลังโผล่เฉพาะตอนที่ทุกก้อนที่เลือกอยู่ก้อนแม่เดียวกัน และปุ่มกลางจะจางลงเมื่อก้อนแม่ไม่มียอดเหลือ
 
 ทั้งหมดนับเป็นหนึ่งขั้นของ undo
+
+## ขึ้นเว็บ
+
+เป็น static site ล้วน — ไม่มี backend ไม่มี env var ที่ต้องตั้ง และไม่มี route ให้ rewrite
+
+Vercel ตรวจเจอ Vite เองและใช้ `dist` เป็น output จึงไม่ต้องตั้งค่าอะไรเพิ่มใน dashboard
+Node บน Vercel เป็น 24 อยู่แล้ว ตรงกับ `.node-version` และ `engines` ในโปรเจ็ค
+
+[vercel.json](vercel.json) มีแค่สองเรื่อง: security headers กับ cache ของไฟล์ที่ไม่มี hash ในชื่อ
+(`/og.png` หนึ่งวัน) ส่วน `/assets/*` ที่มี hash ในชื่อ Vercel จัดการเองอยู่แล้ว
+
+`%SITE_URL%` ใน [index.html](index.html) ถูกแทนค่าตอน build จาก `VERCEL_PROJECT_PRODUCTION_URL`
+(ดู [vite.config.ts](vite.config.ts)) — `og:image` กับ `canonical` ต้องเป็น absolute URL
+แต่โดเมนไม่ควรถูกฝังไว้ในซอร์ส เพราะ preview deployment ไม่ใช่โดเมนโปรดักชัน
+โฮสต์ที่อื่นก็ตั้ง `SITE_URL` เองได้
+
+CSP ยังต้องเปิด `'unsafe-inline'` ให้ `script-src` เพราะสคริปต์ตั้งธีมใน `index.html`
+ต้องรันก่อนเฟรมแรก — ย้ายออกไปเป็นไฟล์นอกเมื่อไหร่ก็ได้จอวาบสีผิดกลับมาทันที
+และต้องเปิดทางให้ Google Fonts สองโดเมน: `style-src` รับ `fonts.googleapis.com`
+ส่วน `font-src` รับ `fonts.gstatic.com` เพราะฟอนต์โหลดตอนรันไทม์
+ที่เหลือบังคับเต็ม: `object-src 'none'` · `base-uri 'self'` · `frame-ancestors 'none'` · `connect-src 'self'`
 
 ## ลิขสิทธิ์
 
