@@ -297,3 +297,52 @@ textarea {
   color: #fff;
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
 }
+
+/* ---------- keep-a-copy-in-this-browser switch ---------- */
+
+/*
+ * A status light with a caption, not a checkbox. Off is the quiet state — a
+ * hollow dot and muted type — so the lit green one reads as "there is a copy of
+ * this on the machine", which is the fact worth noticing at a glance.
+ */
+.save-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 32px;
+  padding: 0 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgb(var(--sink) / 0.5);
+  color: var(--text-mute);
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: color 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+}
+
+.save-toggle:hover {
+  color: var(--text);
+  background: rgb(var(--tint) / 0.12);
+}
+
+.save-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1.5px solid currentColor;
+  opacity: 0.55;
+  transition: background 0.14s ease, border-color 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+}
+
+.save-toggle.is-on {
+  color: var(--text-dim);
+  border-color: color-mix(in srgb, var(--ok) 32%, var(--border));
+}
+
+.save-toggle.is-on .save-dot {
+  opacity: 1;
+  border-color: var(--ok);
+  background: var(--ok);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--ok) 60%, transparent);
+}

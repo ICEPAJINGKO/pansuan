@@ -5,6 +5,7 @@ import { TEMPLATES } from '../model/templates'
 import { exportJson, exportSvg, importJson, pickJsonFile } from '../model/storage'
 import type { ThemeApi } from '../state/useTheme'
 import { ThemeToggle } from './ThemeToggle'
+import { SaveToggle } from './SaveToggle'
 
 interface Props {
   portfolio: Portfolio
@@ -87,6 +88,18 @@ export function TopBar({ portfolio, api, svgRef, onSelect, theme }: Props) {
             ↷
           </button>
         </div>
+
+        <SaveToggle
+          autosave={api.autosave}
+          setAutosave={(on) => {
+            api.setAutosave(on)
+            flash(
+              on
+                ? 'เก็บพอร์ตไว้ในเครื่องแล้ว — ปิดแท็บแล้วเปิดใหม่จะได้ของเดิม'
+                : 'ปิดการเก็บแล้ว — ลบสำเนาในเครื่องทิ้ง ปิดแท็บเมื่อไหร่พอร์ตนี้หาย · กด “บันทึก JSON” ถ้าอยากเก็บเป็นไฟล์',
+            )
+          }}
+        />
 
         <button className="btn btn-ghost" onClick={onImport}>
           นำเข้า

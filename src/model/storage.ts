@@ -24,6 +24,43 @@ export function savePortfolio(portfolio: Portfolio): void {
   }
 }
 
+const AUTOSAVE_KEY = 'pansuan:autosave'
+
+/**
+ * Whether the portfolio is kept between visits. On by default — a planning tool
+ * that loses the plan on a refresh is worse than one that remembers it. When it
+ * is off, this flag is the only thing still written down, so the answer survives
+ * the reload it governs.
+ */
+export function loadAutosave(): boolean {
+  try {
+    return localStorage.getItem(AUTOSAVE_KEY) !== 'off'
+  } catch {
+    return true
+  }
+}
+
+export function saveAutosave(on: boolean): void {
+  try {
+    localStorage.setItem(AUTOSAVE_KEY, on ? 'on' : 'off')
+  } catch {
+    /* private mode — the choice just will not survive a reload */
+  }
+}
+
+/**
+ * Forget the stored copy. Switching the setting off has to take the saved
+ * portfolio with it: left behind, it would quietly come back on the next reload
+ * — the very graph the user just asked this machine not to keep.
+ */
+export function clearPortfolio(): void {
+  try {
+    localStorage.removeItem(KEY)
+  } catch {
+    /* nothing stored, nothing to forget */
+  }
+}
+
 /** Defensive parse — anything unexpected falls back to a sane default. */
 export function sanitize(input: unknown): Portfolio {
   const base = emptyPortfolio()

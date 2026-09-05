@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react'
 import type { Portfolio } from '../types'
 import { emptyPortfolio } from '../model/portfolio'
-import { loadPortfolio, savePortfolio } from '../model/storage'
+import { clearPortfolio, loadAutosave, loadPortfolio, saveAutosave, savePortfolio } from '../model/storage'
 
 const HISTORY_LIMIT = 80
 
@@ -66,6 +66,10 @@ export interface PortfolioApi {
   undo: () => void
   redo: () => void
   replace: (portfolio: Portfolio) => void
+  /** True while the portfolio is kept in this browser between visits. */
+  autosave: boolean
+  /** Turning it off also forgets the copy already stored. */
+  setAutosave: (on: boolean) => void
 }
 
 export function usePortfolio(): PortfolioApi {
@@ -92,11 +96,27 @@ export function usePortfolio(): PortfolioApi {
   const redo = useCallback(() => dispatch({ type: 'redo' }), [])
   const replace = useCallback((portfolio: Portfolio) => dispatch({ type: 'commit', portfolio }), [])
 
+  const [autosave, setAutosaveState] = useState(loadAutosave)
+
+  const setAutosave = useCallback((on: boolean) => {
+    setAutosaveState(on)
+    saveAutosave(on)
+  }, [])
+
+  // Off takes the stored copy with it — and runs on mount too, so a copy left
+  // behind by another tab cannot outlive the setting that forbids it. React
+  // flushes the cleanup below before this, so a save already in flight is
+  // cancelled first and can never land after the wipe.
+  useEffect(() => {
+    if (!autosave) clearPortfolio()
+  }, [autosave])
+
   // Debounced persistence so a drag does not hammer localStorage.
   useEffect(() => {
+    if (!autosave) return
     const id = window.setTimeout(() => savePortfolio(state.present), 320)
     return () => window.clearTimeout(id)
-  }, [state.present])
+  }, [state.present, autosave])
 
   // Undo / redo shortcuts.
   useEffect(() => {
@@ -128,7 +148,21 @@ export function usePortfolio(): PortfolioApi {
       undo,
       redo,
       replace,
+      autosave,
+      setAutosave,
     }),
-    [state.present, state.past.length, state.future.length, commit, amend, checkpoint, undo, redo, replace],
+    [
+      state.present,
+      state.past.length,
+      state.future.length,
+      commit,
+      amend,
+      checkpoint,
+      undo,
+      redo,
+      replace,
+      autosave,
+      setAutosave,
+    ],
   )
 }
