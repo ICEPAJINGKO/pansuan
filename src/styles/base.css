@@ -200,6 +200,19 @@ textarea {
   border-color: color-mix(in srgb, var(--warn) 58%, transparent);
 }
 
+/* The theme accent, for the action that hands a parent's left-over money out. */
+.btn-spare {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.btn-spare:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 58%, transparent);
+}
+
 .btn-sm {
   height: 26px;
   padding: 0 9px;

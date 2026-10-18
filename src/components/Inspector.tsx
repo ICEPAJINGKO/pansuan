@@ -8,22 +8,23 @@ import {
   createChildUnder,
   duplicateNode,
   excessOf,
-  fillRemainder,
+  fillRemainderAcross,
   findParent,
   flattenLeaves,
   equalizeSelection,
-  equalizeUsingRemainder,
   equalizeWithinParent,
   moveSibling,
   normalizeChildren,
   removeNode,
   ROOT_ID,
   sharedParentOf,
+  spareOf,
   spreadEvenly,
   trimExcessAcross,
   trimShares,
   updateNode,
-  type TrimSplit,
+  type FillSplit,
+  type ShareSplit,
 } from '../model/portfolio'
 import { formatMoney, formatPercent } from '../lib/format'
 import { hex6, SWATCHES } from '../lib/palette'
@@ -143,8 +144,10 @@ function NodeEditor({
   const siblings = parent?.children ?? []
   const index = siblings.findIndex((c) => c.id === id)
   const children = node.children
-  // Only the parent's own children can be cut to fit it — not anything deeper.
+  // Only the parent's own children can be cut to fit it or filled up from it —
+  // not anything deeper.
   const excess = parentComputed ? excessOf(parentComputed) : 0
+  const spare = parentComputed ? spareOf(parentComputed) : 0
   const canTrim = parentComputed ? canTrimExcess(computed, parentComputed) : false
   const money = (amount: number) => formatMoney(amount, portfolio.currency)
 
@@ -209,15 +212,40 @@ function NodeEditor({
           </div>
         </dl>
 
-        {parentComputed && parentComputed.remainder > 0.005 && (
-          <button className="btn btn-soft full" onClick={() => api.commit((p) => ({ ...p, root: fillRemainder(p, id) }))}>
-            เติมส่วนที่เหลือของก้อนแม่ (+{formatMoney(parentComputed.remainder, portfolio.currency)})
-          </button>
+        {parent && spare > 0 && (
+          <div className="shift-box is-spare">
+            <p className="shift-note">
+              ก้อนแม่ <b>“{parent.name}”</b> ยังเหลือ <b>{money(spare)}</b> ที่ยังไม่ได้จัดสรร
+            </p>
+            <button
+              className="btn btn-soft btn-spare full"
+              title="เอายอดที่เหลือของก้อนแม่ใส่เข้าก้อนนี้ก้อนเดียว ก้อนอื่นไม่ขยับ แล้วก้อนแม่จะครบ 100% พอดี"
+              onClick={() =>
+                api.commit((p) => {
+                  const next = fillRemainderAcross(p, [id])
+                  return next === p.root ? p : { ...p, root: next }
+                })
+              }
+            >
+              เติมส่วนที่เหลือของก้อนแม่ (+{money(spare)})
+            </button>
+            <p className="shift-note is-soft">
+              ก้อนนี้จะเป็น {money(computed.amount + spare)} จาก {money(computed.amount)} · ก้อนอื่นไม่ขยับ · ก้อนแม่ครบ 100% พอดี
+            </p>
+            {children.length > 0 && (
+              <p className="shift-note is-soft">
+                ก้อนย่อยของก้อนนี้ที่ตั้งเป็น % จะเพิ่มตามยอดใหม่ ส่วนที่ตั้งเป็นจำนวนเงินจะคงเดิม
+              </p>
+            )}
+            <p className="shift-note is-soft">
+              เลือกหลายก้อน (Ctrl+คลิก) เพื่อเกลี่ยเข้าหลายก้อนพร้อมกัน — ตามจำนวนเงิน ตามสัดส่วน หรือหารเท่ากัน
+            </p>
+          </div>
         )}
 
         {parent && excess > 0 && (
-          <div className="trim-box">
-            <p className="trim-note">
+          <div className="shift-box is-over">
+            <p className="shift-note">
               ก้อนแม่ <b>“{parent.name}”</b> จัดสรรเกิน <b className="is-warn">{money(excess)}</b>
             </p>
             <button
@@ -233,13 +261,13 @@ function NodeEditor({
             >
               ตัดยอดที่เกินออกจากก้อนนี้ (−{money(excess)})
             </button>
-            <p className="trim-note is-soft">
+            <p className="shift-note is-soft">
               {canTrim
                 ? `ก้อนนี้จะเหลือ ${money(computed.amount - excess)} จาก ${money(computed.amount)} · ก้อนอื่นไม่ขยับ · ก้อนแม่ครบ 100% พอดี`
                 : `ก้อนนี้มี ${money(computed.amount)} น้อยกว่ายอดที่เกิน — ตัดทั้งก้อนก็ยังไม่พอ ลองเลือกก้อนที่ใหญ่กว่า`}
             </p>
             {canTrim && children.length > 0 && (
-              <p className="trim-note is-soft">
+              <p className="shift-note is-soft">
                 ก้อนย่อยของก้อนนี้ที่ตั้งเป็น % จะลดตามยอดใหม่ ส่วนที่ตั้งเป็นจำนวนเงินจะคงเดิม
               </p>
             )}
@@ -293,7 +321,7 @@ function NodeEditor({
               )}
             </div>
             {computed.overAllocated && (
-              <p className="trim-note is-soft">
+              <p className="shift-note is-soft">
                 เลือกก้อนย่อยก้อนใดก้อนหนึ่งด้านล่าง แล้วกด “ตัดยอดที่เกินออกจากก้อนนี้” เพื่อให้ก้อนนี้กลับมาครบ 100%
               </p>
             )}
@@ -440,7 +468,7 @@ function MultiSelect({
   const parent = parentId ? tree.byId.get(parentId) : null
   const alreadyEven = chosen.every((node) => Math.abs(node.amount - each) < 0.005)
   // What the parent still has spare, and where the selection lands if it soaks it up.
-  const spare = parent?.remainder ?? 0
+  const spare = parent ? spareOf(parent) : 0
   const withSpare = (total + spare) / chosen.length
 
   // When the parent holds more than it has, the selection can be what gives it back.
@@ -456,9 +484,15 @@ function MultiSelect({
   // True when everyone can afford the same baht — no small node is emptied for the others.
   const evenCut =
     evenShares !== null && evenShares.every((share) => Math.abs(share - excess / chosen.length) <= 1e-6 + excess * 1e-9)
-  const trim = (split: TrimSplit) =>
+  const trim = (split: ShareSplit) =>
     api.commit((p) => {
       const next = trimExcessAcross(p, ids, split)
+      return next === p.root ? p : { ...p, root: next }
+    })
+  // The other way round: the parent has money nobody holds yet, and the selection takes it.
+  const fill = (split: FillSplit) =>
+    api.commit((p) => {
+      const next = fillRemainderAcross(p, ids, split)
       return next === p.root ? p : { ...p, root: next }
     })
 
@@ -491,8 +525,8 @@ function MultiSelect({
         </dl>
 
         {parent && excess > 0 && (
-          <div className="trim-box">
-            <p className="trim-note">
+          <div className="shift-box is-over">
+            <p className="shift-note">
               ก้อนแม่ <b>“{parent.name}”</b> จัดสรรเกิน <b className="is-warn">{money(excess)}</b>
             </p>
             <button
@@ -515,10 +549,44 @@ function MultiSelect({
             >
               {canTrim ? `ตัดตามสัดส่วนยอด · ทุกก้อนลด ${formatPercent(excess / total)}` : 'ตัดตามสัดส่วนยอด'}
             </button>
-            <p className="trim-note is-soft">
+            <p className="shift-note is-soft">
               {canTrim
                 ? `ก้อนที่เลือกรวม ${money(total)} จะเหลือ ${money(total - excess)} · ก้อนที่ไม่ได้เลือกไม่ขยับ · ก้อนแม่ครบ 100% พอดี`
                 : `ก้อนที่เลือกรวมกันมี ${money(total)} น้อยกว่ายอดที่เกิน — ตัดทั้งหมดก็ยังไม่พอ เลือกก้อนเพิ่มอีก`}
+            </p>
+          </div>
+        )}
+
+        {parent && spare > 0 && (
+          <div className="shift-box is-spare">
+            <p className="shift-note">
+              ก้อนแม่ <b>“{parent.name}”</b> ยังเหลือ <b>{money(spare)}</b> ที่ยังไม่ได้จัดสรร
+            </p>
+            <button
+              className="btn btn-soft btn-spare full"
+              title="แบ่งยอดที่เหลือให้ทุกก้อนที่เลือกก้อนละเท่า ๆ กัน"
+              onClick={() => fill('equal')}
+            >
+              เพิ่มตามจำนวนเงิน · ก้อนละ +{money(spare / chosen.length)}
+            </button>
+            <button
+              className="btn btn-soft btn-spare full"
+              disabled={total <= 0}
+              title="แบ่งยอดที่เหลือตามสัดส่วนยอดของแต่ละก้อน ก้อนใหญ่ได้มากกว่า ก้อนเล็กได้น้อยกว่า"
+              onClick={() => fill('proportional')}
+            >
+              {total > 0 ? `เพิ่มตามสัดส่วนยอด · ทุกก้อน +${formatPercent(spare / total)}` : 'เพิ่มตามสัดส่วนยอด'}
+            </button>
+            <button
+              className="btn btn-soft btn-spare full"
+              title="ดึงยอดที่เหลือมารวมกับก้อนที่เลือก แล้วหารให้เท่ากันทุกก้อน — ก้อนที่ใหญ่กว่าค่าเฉลี่ยใหม่จะลดลงด้วย ส่วนก้อนที่ไม่ได้เลือกไม่ขยับ"
+              onClick={() => fill('level')}
+            >
+              เกลี่ยยอดที่เหลือให้เท่ากัน · ก้อนละ {money(withSpare)}
+            </button>
+            <p className="shift-note is-soft">
+              ก้อนที่เลือกรวม {money(total)} จะเป็น {money(total + spare)} · ก้อนที่ไม่ได้เลือกไม่ขยับ · ก้อนแม่ครบ 100% พอดี
+              {total <= 0 && ' · ก้อนที่เลือกยังเป็น ฿0 หมด จึงไม่มีสัดส่วนให้ยึด'}
             </p>
           </div>
         )}
@@ -531,23 +599,6 @@ function MultiSelect({
         >
           {alreadyEven ? 'เท่ากันอยู่แล้ว' : `หารเฉลี่ยเท่ากัน · ก้อนละ ${formatMoney(each, portfolio.currency)}`}
         </button>
-
-        {parent && (
-          <button
-            className="btn btn-soft full"
-            disabled={spare <= 0.005}
-            title={
-              spare > 0.005
-                ? `ดึง ${formatMoney(spare, portfolio.currency)} ที่ยังไม่ได้จัดสรรใน “${parent.name}” มารวมกับก้อนที่เลือก แล้วหารให้เท่ากัน — ก้อนอื่นที่ไม่ได้เลือกไม่ขยับ`
-                : `“${parent.name}” จัดสรรครบแล้ว ไม่มียอดเหลือให้เกลี่ย`
-            }
-            onClick={() => api.commit((p) => ({ ...p, root: equalizeUsingRemainder(p, ids) }))}
-          >
-            {spare > 0.005
-              ? `เกลี่ยยอดที่เหลือให้เท่ากัน · ก้อนละ ${formatMoney(withSpare, portfolio.currency)}`
-              : 'ไม่มียอดเหลือให้เกลี่ย'}
-          </button>
-        )}
 
         {parent && (
           <button

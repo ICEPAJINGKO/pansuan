@@ -175,33 +175,24 @@ export function normalizeChildren(portfolio: Portfolio, parentId: string): Asset
   }))
 }
 
-/** Grow one child until its parent is exactly fully allocated. */
-export function fillRemainder(portfolio: Portfolio, id: string): AssetNode {
-  const parent = findParent(portfolio.root, id)
-  const node = findNode(portfolio.root, id)
-  if (!parent || !node) return portfolio.root
-  const tree = computeTree(portfolio)
-  const self = tree.byId.get(id)
-  const parentComputed = tree.byId.get(parent.id)
-  if (!self || !parentComputed) return portfolio.root
-  const others = parentComputed.allocated - self.amount
-  const target = Math.max(0, parentComputed.amount - others)
-  const value =
-    node.mode === 'percent'
-      ? parentComputed.amount > 0
-        ? tidy((target / parentComputed.amount) * 100, 2)
-        : 0
-      : tidy(target, 2)
-  return updateNode(portfolio.root, id, { value })
-}
-
 /** What a node's children hold beyond what the node itself has. 0 when they fit. */
 export function excessOf(node: ComputedNode): number {
   return node.overAllocated ? node.allocated - node.amount : 0
 }
 
-/** How the excess is shared out among the nodes that are asked to give it up. */
-export type TrimSplit = 'equal' | 'proportional'
+/**
+ * What a node has that its children do not yet hold. Under half a satang counts
+ * as nothing, the same line the panels draw when they say "left over".
+ */
+export function spareOf(node: ComputedNode): number {
+  return node.remainder > 0.005 ? node.remainder : 0
+}
+
+/** How a sum of money is shared out among the nodes that take part. */
+export type ShareSplit = 'equal' | 'proportional'
+
+/** Handing out a spare has a third way: level the nodes off, spare included. */
+export type FillSplit = ShareSplit | 'level'
 
 /** The same kind of tolerance `computeTree` uses to decide a parent is over. */
 const slack = (amount: number) => 1e-6 + amount * 1e-9
@@ -216,7 +207,7 @@ const slack = (amount: number) => 1e-6 + amount * 1e-9
  * the shares always add up to the excess. `proportional` takes the same
  * fraction of each node's own money, which can never overdraw anyone.
  */
-export function trimShares(amounts: readonly number[], excess: number, split: TrimSplit): number[] | null {
+export function trimShares(amounts: readonly number[], excess: number, split: ShareSplit): number[] | null {
   const total = amounts.reduce((sum, a) => sum + a, 0)
   if (excess <= 0 || amounts.length === 0 || total < excess - slack(total)) return null
   const owed = Math.min(excess, total)
@@ -236,32 +227,62 @@ export function trimShares(amounts: readonly number[], excess: number, split: Tr
   return shares
 }
 
+/**
+ * How much each node's money changes when `spare` is handed out among them, in
+ * the order given: positive for a gain, negative where `level` takes from a node
+ * that is above the new average. Null when there is nothing to hand out, or when
+ * `proportional` has nothing to be proportional to (they all hold zero).
+ *
+ * `equal` adds the same baht to each. `proportional` adds the same fraction of
+ * each node's own money. `level` ignores what they held and makes every one end
+ * on the same amount: (what they hold together + the spare) ÷ how many. Handing
+ * out money never overdraws anyone, so the changes always add up to the spare.
+ */
+export function fillChanges(amounts: readonly number[], spare: number, split: FillSplit): number[] | null {
+  if (spare <= 0 || amounts.length === 0) return null
+  const total = amounts.reduce((sum, a) => sum + a, 0)
+  if (split === 'equal') return amounts.map(() => spare / amounts.length)
+  if (split === 'level') return amounts.map((a) => (total + spare) / amounts.length - a)
+  return total > 0 ? amounts.map((a) => (spare * a) / total) : null
+}
+
 /** Can this one child give up the parent's whole excess without going below zero? */
 export function canTrimExcess(child: ComputedNode, parent: ComputedNode): boolean {
   return trimShares([child.amount], excessOf(parent), 'equal') !== null
 }
 
 /**
- * Decimals kept on a trimmed node. Two would do for a typed value, but here the
- * result has to land the parent on exactly 100%: a percent node at two decimals
- * is only good to half a hundredth of a percent — fifty baht on a million — and
- * the parent would go on reading as over-allocated by that much. Ten leaves the
- * error far enough under the tolerance `computeTree` allows that it stays there
- * when it is added up across dozens of nodes, at any capital.
+ * Decimals kept on a node whose money was moved to settle its parent. Two would
+ * do for a typed value, but here the result has to land the parent on exactly
+ * 100%: a percent node at two decimals is only good to half a hundredth of a
+ * percent — fifty baht on a million — and the parent would go on reading as over
+ * or under by that much. Ten is far enough below that to stay put when added up
+ * across dozens of nodes, for any ordinary capital.
  */
 const EXACT = 10
 
 /**
- * Take what a parent's children hold beyond its own amount out of the ones
- * given, so the parent lands on exactly fully allocated. They must all be
- * children of the same parent. Everything else stays as it is: which children
- * give the money up is the user's decision, so this never picks any.
- *
- * Money is taken, and each node is then re-expressed in whatever unit it already
- * uses. If the nodes together hold less than the excess the tree comes back
- * unchanged, and the caller says why — see `trimShares`.
+ * A percent value is a fraction of its parent's money, so the same number of
+ * decimals is a bigger error the bigger the parent is. This asks for enough that
+ * each node stays within a hundred-thousandth of a baht, so that the error added
+ * up over a hundred nodes still stays under the half satang from which the
+ * panels draw a left-over. Capped where a double has nothing more to give.
  */
-export function trimExcessAcross(portfolio: Portfolio, ids: readonly string[], split: TrimSplit = 'equal'): AssetNode {
+const percentDecimals = (parentAmount: number) =>
+  Math.min(14, Math.max(EXACT, Math.ceil(Math.log10(Math.max(1, parentAmount)) + 2.7)))
+
+/**
+ * Change the money of nodes that are all children of one parent, then
+ * re-express each in whatever unit it already uses. `plan` is given the parent
+ * and the nodes and answers with how much each one changes by — or null for
+ * "nothing to do", in which case the tree comes back untouched. A node never
+ * goes below zero, and everything not named stays exactly as it was.
+ */
+function shiftAcross(
+  portfolio: Portfolio,
+  ids: readonly string[],
+  plan: (parent: ComputedNode, nodes: ComputedNode[]) => number[] | null,
+): AssetNode {
   const picked = [...new Set(ids)]
   const parentId = sharedParentOf(portfolio, picked)
   if (!parentId) return portfolio.root
@@ -276,25 +297,57 @@ export function trimExcessAcross(portfolio: Portfolio, ids: readonly string[], s
     nodes.push(node)
   }
 
-  const shares = trimShares(
-    nodes.map((n) => n.amount),
-    excessOf(parent),
-    split,
-  )
-  if (!shares) return portfolio.root
+  const changes = plan(parent, nodes)
+  if (!changes) return portfolio.root
 
   let root = portfolio.root
   nodes.forEach((n, i) => {
-    const target = Math.max(0, n.amount - shares[i])
+    const target = Math.max(0, n.amount + changes[i])
     const value =
       n.node.mode === 'percent'
         ? parent.amount > 0
-          ? tidy((target / parent.amount) * 100, EXACT)
+          ? tidy((target / parent.amount) * 100, percentDecimals(parent.amount))
           : 0
         : tidy(target, EXACT)
     root = updateNode(root, n.id, { value })
   })
   return root
+}
+
+/**
+ * Take what a parent's children hold beyond its own amount out of the ones
+ * given, so the parent lands on exactly fully allocated. They must all be
+ * children of the same parent. Which children give the money up is the user's
+ * decision, so this never picks any. If together they hold less than the excess
+ * the tree comes back unchanged, and the caller says why — see `trimShares`.
+ */
+export function trimExcessAcross(portfolio: Portfolio, ids: readonly string[], split: ShareSplit = 'equal'): AssetNode {
+  return shiftAcross(
+    portfolio,
+    ids,
+    (parent, nodes) =>
+      trimShares(
+        nodes.map((n) => n.amount),
+        excessOf(parent),
+        split,
+      )?.map((share) => -share) ?? null,
+  )
+}
+
+/**
+ * The other way round: hand what a parent has left over to the children given,
+ * so it lands on exactly fully allocated. Same rules — one parent, the user
+ * picks who takes it, nothing else moves. The tree comes back unchanged when
+ * there is nothing left over, or no way to share it as asked — see `fillChanges`.
+ */
+export function fillRemainderAcross(portfolio: Portfolio, ids: readonly string[], split: FillSplit = 'equal'): AssetNode {
+  return shiftAcross(portfolio, ids, (parent, nodes) =>
+    fillChanges(
+      nodes.map((n) => n.amount),
+      spareOf(parent),
+      split,
+    ),
+  )
 }
 
 /** Switch a node between % and absolute without changing the money it represents. */
@@ -539,38 +592,6 @@ export function remainderFor(portfolio: Portfolio, ids: readonly string[]): numb
   const parentId = sharedParentOf(portfolio, ids)
   if (!parentId) return 0
   return computeTree(portfolio).byId.get(parentId)?.remainder ?? 0
-}
-
-/**
- * Pull the parent's unallocated money into the selection and level it out.
- * Unlike equalizeWithinParent this leaves siblings that were not selected
- * exactly as they were, so the parent lands on fully allocated instead of
- * overflowing — it is the multi-node twin of the single-node "fill the
- * remainder" button.
- */
-export function equalizeUsingRemainder(portfolio: Portfolio, ids: readonly string[]): AssetNode {
-  const parentId = sharedParentOf(portfolio, ids)
-  if (!parentId || ids.length < 2) return portfolio.root
-  const tree = computeTree(portfolio)
-  const parent = tree.byId.get(parentId)
-  if (!parent) return portfolio.root
-
-  const selected = ids.reduce((sum, id) => sum + (tree.byId.get(id)?.amount ?? 0), 0)
-  const each = (selected + parent.remainder) / ids.length
-
-  let root = portfolio.root
-  for (const id of ids) {
-    const node = findNode(root, id)
-    if (!node) continue
-    const value =
-      node.mode === 'percent'
-        ? parent.amount > 0
-          ? tidy((each / parent.amount) * 100, 2)
-          : 0
-        : tidy(each, 2)
-    root = updateNode(root, id, { value })
-  }
-  return root
 }
 
 /**
