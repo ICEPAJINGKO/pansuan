@@ -195,6 +195,108 @@ export function fillRemainder(portfolio: Portfolio, id: string): AssetNode {
   return updateNode(portfolio.root, id, { value })
 }
 
+/** What a node's children hold beyond what the node itself has. 0 when they fit. */
+export function excessOf(node: ComputedNode): number {
+  return node.overAllocated ? node.allocated - node.amount : 0
+}
+
+/** How the excess is shared out among the nodes that are asked to give it up. */
+export type TrimSplit = 'equal' | 'proportional'
+
+/** The same kind of tolerance `computeTree` uses to decide a parent is over. */
+const slack = (amount: number) => 1e-6 + amount * 1e-9
+
+/**
+ * How much money each node gives up toward `excess`, in the order they came in.
+ * Null when together they hold less than the excess — nothing they could give
+ * would bring the parent back to 100% without a node going below zero.
+ *
+ * `equal` asks the same baht of everyone, but a node cannot give what it does
+ * not have: the smallest are emptied first and the rest cover what is left, so
+ * the shares always add up to the excess. `proportional` takes the same
+ * fraction of each node's own money, which can never overdraw anyone.
+ */
+export function trimShares(amounts: readonly number[], excess: number, split: TrimSplit): number[] | null {
+  const total = amounts.reduce((sum, a) => sum + a, 0)
+  if (excess <= 0 || amounts.length === 0 || total < excess - slack(total)) return null
+  const owed = Math.min(excess, total)
+
+  if (split === 'proportional') return amounts.map((a) => (total > 0 ? (owed * a) / total : 0))
+
+  // smallest first: once one node can afford its share, every larger one can too
+  const shares = new Array<number>(amounts.length).fill(0)
+  let left = owed
+  amounts
+    .map((_, i) => i)
+    .sort((a, b) => amounts[a] - amounts[b])
+    .forEach((i, rank) => {
+      shares[i] = Math.min(amounts[i], left / (amounts.length - rank))
+      left -= shares[i]
+    })
+  return shares
+}
+
+/** Can this one child give up the parent's whole excess without going below zero? */
+export function canTrimExcess(child: ComputedNode, parent: ComputedNode): boolean {
+  return trimShares([child.amount], excessOf(parent), 'equal') !== null
+}
+
+/**
+ * Decimals kept on a trimmed node. Two would do for a typed value, but here the
+ * result has to land the parent on exactly 100%: a percent node at two decimals
+ * is only good to half a hundredth of a percent — fifty baht on a million — and
+ * the parent would go on reading as over-allocated by that much. Ten leaves the
+ * error far enough under the tolerance `computeTree` allows that it stays there
+ * when it is added up across dozens of nodes, at any capital.
+ */
+const EXACT = 10
+
+/**
+ * Take what a parent's children hold beyond its own amount out of the ones
+ * given, so the parent lands on exactly fully allocated. They must all be
+ * children of the same parent. Everything else stays as it is: which children
+ * give the money up is the user's decision, so this never picks any.
+ *
+ * Money is taken, and each node is then re-expressed in whatever unit it already
+ * uses. If the nodes together hold less than the excess the tree comes back
+ * unchanged, and the caller says why — see `trimShares`.
+ */
+export function trimExcessAcross(portfolio: Portfolio, ids: readonly string[], split: TrimSplit = 'equal'): AssetNode {
+  const picked = [...new Set(ids)]
+  const parentId = sharedParentOf(portfolio, picked)
+  if (!parentId) return portfolio.root
+
+  const tree = computeTree(portfolio)
+  const parent = tree.byId.get(parentId)
+  if (!parent) return portfolio.root
+  const nodes: ComputedNode[] = []
+  for (const id of picked) {
+    const node = tree.byId.get(id)
+    if (!node) return portfolio.root
+    nodes.push(node)
+  }
+
+  const shares = trimShares(
+    nodes.map((n) => n.amount),
+    excessOf(parent),
+    split,
+  )
+  if (!shares) return portfolio.root
+
+  let root = portfolio.root
+  nodes.forEach((n, i) => {
+    const target = Math.max(0, n.amount - shares[i])
+    const value =
+      n.node.mode === 'percent'
+        ? parent.amount > 0
+          ? tidy((target / parent.amount) * 100, EXACT)
+          : 0
+        : tidy(target, EXACT)
+    root = updateNode(root, n.id, { value })
+  })
+  return root
+}
+
 /** Switch a node between % and absolute without changing the money it represents. */
 export function convertMode(portfolio: Portfolio, id: string, mode: AssetNode['mode']): AssetNode {
   const node = findNode(portfolio.root, id)

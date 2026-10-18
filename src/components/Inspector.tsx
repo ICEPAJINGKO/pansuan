@@ -3,9 +3,11 @@ import type { ComputedTree, Portfolio } from '../types'
 import type { PortfolioApi } from '../state/usePortfolio'
 import type { SelectHandler } from '../App'
 import {
+  canTrimExcess,
   convertMode,
   createChildUnder,
   duplicateNode,
+  excessOf,
   fillRemainder,
   findParent,
   flattenLeaves,
@@ -18,7 +20,10 @@ import {
   ROOT_ID,
   sharedParentOf,
   spreadEvenly,
+  trimExcessAcross,
+  trimShares,
   updateNode,
+  type TrimSplit,
 } from '../model/portfolio'
 import { formatMoney, formatPercent } from '../lib/format'
 import { hex6, SWATCHES } from '../lib/palette'
@@ -138,6 +143,10 @@ function NodeEditor({
   const siblings = parent?.children ?? []
   const index = siblings.findIndex((c) => c.id === id)
   const children = node.children
+  // Only the parent's own children can be cut to fit it — not anything deeper.
+  const excess = parentComputed ? excessOf(parentComputed) : 0
+  const canTrim = parentComputed ? canTrimExcess(computed, parentComputed) : false
+  const money = (amount: number) => formatMoney(amount, portfolio.currency)
 
   return (
     <aside className="panel panel-right">
@@ -206,6 +215,37 @@ function NodeEditor({
           </button>
         )}
 
+        {parent && excess > 0 && (
+          <div className="trim-box">
+            <p className="trim-note">
+              ก้อนแม่ <b>“{parent.name}”</b> จัดสรรเกิน <b className="is-warn">{money(excess)}</b>
+            </p>
+            <button
+              className="btn btn-soft btn-warn full"
+              disabled={!canTrim}
+              title="เอายอดที่เกินออกจากก้อนนี้ก้อนเดียว ก้อนอื่นไม่ขยับ แล้วก้อนแม่จะครบ 100% พอดี"
+              onClick={() =>
+                api.commit((p) => {
+                  const next = trimExcessAcross(p, [id])
+                  return next === p.root ? p : { ...p, root: next }
+                })
+              }
+            >
+              ตัดยอดที่เกินออกจากก้อนนี้ (−{money(excess)})
+            </button>
+            <p className="trim-note is-soft">
+              {canTrim
+                ? `ก้อนนี้จะเหลือ ${money(computed.amount - excess)} จาก ${money(computed.amount)} · ก้อนอื่นไม่ขยับ · ก้อนแม่ครบ 100% พอดี`
+                : `ก้อนนี้มี ${money(computed.amount)} น้อยกว่ายอดที่เกิน — ตัดทั้งก้อนก็ยังไม่พอ ลองเลือกก้อนที่ใหญ่กว่า`}
+            </p>
+            {canTrim && children.length > 0 && (
+              <p className="trim-note is-soft">
+                ก้อนย่อยของก้อนนี้ที่ตั้งเป็น % จะลดตามยอดใหม่ ส่วนที่ตั้งเป็นจำนวนเงินจะคงเดิม
+              </p>
+            )}
+          </div>
+        )}
+
         <div className="btn-grid">
           <button
             className="btn btn-soft"
@@ -252,6 +292,11 @@ function NodeEditor({
                 <span className="pill is-ok">ครบ 100%</span>
               )}
             </div>
+            {computed.overAllocated && (
+              <p className="trim-note is-soft">
+                เลือกก้อนย่อยก้อนใดก้อนหนึ่งด้านล่าง แล้วกด “ตัดยอดที่เกินออกจากก้อนนี้” เพื่อให้ก้อนนี้กลับมาครบ 100%
+              </p>
+            )}
             <div className="btn-grid">
               <button className="btn btn-soft" onClick={() => api.commit((p) => ({ ...p, root: spreadEvenly(p.root, id) }))}>
                 เกลี่ยเท่ากัน
@@ -398,6 +443,25 @@ function MultiSelect({
   const spare = parent?.remainder ?? 0
   const withSpare = (total + spare) / chosen.length
 
+  // When the parent holds more than it has, the selection can be what gives it back.
+  const money = (amount: number) => formatMoney(amount, portfolio.currency)
+  const excess = parent ? excessOf(parent) : 0
+  const evenShares = trimShares(
+    chosen.map((node) => node.amount),
+    excess,
+    'equal',
+  )
+  // Null means the selection together holds less than the excess: no way to cover it.
+  const canTrim = evenShares !== null
+  // True when everyone can afford the same baht — no small node is emptied for the others.
+  const evenCut =
+    evenShares !== null && evenShares.every((share) => Math.abs(share - excess / chosen.length) <= 1e-6 + excess * 1e-9)
+  const trim = (split: TrimSplit) =>
+    api.commit((p) => {
+      const next = trimExcessAcross(p, ids, split)
+      return next === p.root ? p : { ...p, root: next }
+    })
+
   return (
     <aside className="panel panel-right">
       <div className="panel-head">
@@ -425,6 +489,39 @@ function MultiSelect({
             <dd>{formatMoney(each, portfolio.currency)}</dd>
           </div>
         </dl>
+
+        {parent && excess > 0 && (
+          <div className="trim-box">
+            <p className="trim-note">
+              ก้อนแม่ <b>“{parent.name}”</b> จัดสรรเกิน <b className="is-warn">{money(excess)}</b>
+            </p>
+            <button
+              className="btn btn-soft btn-warn full"
+              disabled={!canTrim}
+              title="เอายอดที่เกินออกจากทุกก้อนที่เลือกก้อนละเท่า ๆ กัน ก้อนที่มียอดไม่พอจะเหลือ ฿0 แล้วก้อนอื่นรับส่วนที่ขาดแทน"
+              onClick={() => trim('equal')}
+            >
+              {!canTrim
+                ? 'ตัดเท่า ๆ กัน'
+                : evenCut
+                  ? `ตัดเท่า ๆ กัน · ก้อนละ −${money(excess / chosen.length)}`
+                  : 'ตัดเท่า ๆ กัน · ก้อนเล็กถูกตัดจนหมดก่อน'}
+            </button>
+            <button
+              className="btn btn-soft btn-warn full"
+              disabled={!canTrim}
+              title="เอายอดที่เกินออกจากทุกก้อนที่เลือกในสัดส่วนเดียวกัน ก้อนใหญ่เสียมากกว่า ก้อนเล็กเสียน้อยกว่า และไม่มีก้อนไหนติดลบ"
+              onClick={() => trim('proportional')}
+            >
+              {canTrim ? `ตัดตามสัดส่วนยอด · ทุกก้อนลด ${formatPercent(excess / total)}` : 'ตัดตามสัดส่วนยอด'}
+            </button>
+            <p className="trim-note is-soft">
+              {canTrim
+                ? `ก้อนที่เลือกรวม ${money(total)} จะเหลือ ${money(total - excess)} · ก้อนที่ไม่ได้เลือกไม่ขยับ · ก้อนแม่ครบ 100% พอดี`
+                : `ก้อนที่เลือกรวมกันมี ${money(total)} น้อยกว่ายอดที่เกิน — ตัดทั้งหมดก็ยังไม่พอ เลือกก้อนเพิ่มอีก`}
+            </p>
+          </div>
+        )}
 
         <button
           className="btn btn-primary full"

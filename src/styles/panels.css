@@ -533,6 +533,41 @@ body.is-moving-node .tree-root-drop.is-drop-target {
   align-items: stretch;
 }
 
+/* Shown on a child whose parent holds more than it has: what is over, and the
+   one button that takes it back out of this child. */
+.trim-box {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--warn) 30%, transparent);
+  background: color-mix(in srgb, var(--warn) 8%, transparent);
+}
+
+/* The amount can be long ("−฿12,345,678"), so the button may wrap rather than clip. */
+.trim-box .btn {
+  height: auto;
+  min-height: 30px;
+  padding: 6px 10px;
+  line-height: 1.3;
+  white-space: normal;
+}
+
+.trim-note {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-dim);
+}
+
+/* Two classes on purpose: a bare .trim-note would be the same specificity as
+   anything set earlier on <p>, and this one has to stay quieter. */
+.trim-note.is-soft {
+  font-size: 11.5px;
+  color: var(--text-mute);
+}
+
 .mode-toggle {
   flex: none;
   display: flex;
