@@ -72,6 +72,11 @@
     transform: none;
   }
 
+  .gap-controls {
+    right: 8px;
+    top: 8px;
+  }
+
   .toast {
     max-width: calc(100vw - 32px);
     text-align: center;

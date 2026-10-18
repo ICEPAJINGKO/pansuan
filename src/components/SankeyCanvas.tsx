@@ -1,6 +1,15 @@
 import { memo, useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ComputedTree, CurrencyCode } from '../types'
-import { CARD_RADIUS, CARD_TUCK, layoutSankey, ribbonPath, type SankeyLayout } from '../model/layout'
+import {
+  CARD_RADIUS,
+  CARD_TUCK,
+  COL_GAP,
+  COL_GAP_MAX,
+  COL_GAP_MIN,
+  layoutSankey,
+  ribbonPath,
+  type SankeyLayout,
+} from '../model/layout'
 import { CURRENCIES, formatCompact, formatMoney, formatPercent } from '../lib/format'
 import { publishParallax, viewport } from '../state/viewport'
 import { ROOT_ID } from '../model/portfolio'
@@ -47,6 +56,23 @@ interface Anim {
   h: number
 }
 
+/* Two walls and a double-headed arrow between them: "the space across". Drawn
+ * rather than typed as "↔" — the mono font's arrow is a speck next to its digits. */
+function GapIcon() {
+  return (
+    <svg className="gap-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
+      <path
+        d="M2 3v10M14 3v10M4.8 8h6.4M6.9 5.9 4.8 8l2.1 2.1M9.1 5.9 11.2 8l-2.1 2.1"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 export interface SankeyCanvasProps {
   tree: ComputedTree
   currency: CurrencyCode
@@ -63,6 +89,10 @@ export interface SankeyCanvasProps {
   dragRef: React.RefObject<boolean>
   /** True for as long as a move is being aimed — the diagram holds its frame. */
   dragging: boolean
+  /** Horizontal space between a column and the next. */
+  gap: number
+  onGapNudge: (direction: 1 | -1) => void
+  onGapReset: () => void
   svgRef: React.RefObject<SVGSVGElement | null>
 }
 
@@ -81,6 +111,9 @@ export const SankeyCanvas = memo(function SankeyCanvas({
   onDragNode,
   dragRef,
   dragging,
+  gap,
+  onGapNudge,
+  onGapReset,
   svgRef,
 }: SankeyCanvasProps) {
   const gid = useId().replace(/:/g, '')
@@ -95,7 +128,7 @@ export const SankeyCanvas = memo(function SankeyCanvas({
   const [hoverId, setHoverId] = useState<string | null>(null)
   const [zoomLabel, setZoomLabel] = useState(1)
 
-  const layout = useMemo(() => layoutSankey(tree), [tree])
+  const layout = useMemo(() => layoutSankey(tree, gap), [tree, gap])
   const layoutRef = useRef<SankeyLayout>(layout)
   layoutRef.current = layout
 
@@ -562,10 +595,16 @@ export const SankeyCanvas = memo(function SankeyCanvas({
       else if (e.key === '-' || e.key === '_') zoomAt(1 / 1.2, cx, cy)
       else if (e.key === '0') fitToView()
       else if (e.key === 'Escape') onSelect(null)
+      // By physical key, not character: with a Thai layout active `[` types a
+      // Thai letter, and the shortcut would silently go dead.
+      else if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.code === 'BracketLeft') onGapNudge(-1)
+        else if (e.code === 'BracketRight') onGapNudge(1)
+      }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [fitToView, zoomAt, onSelect])
+  }, [fitToView, zoomAt, onSelect, onGapNudge])
 
   /* ---------------- derived render data ---------------- */
 
@@ -844,6 +883,36 @@ export const SankeyCanvas = memo(function SankeyCanvas({
         </button>
         <button className="icon-btn zoom-btn" title="ซูมออก (-)" onClick={() => zoomAt(1 / 1.25, (wrapRef.current?.clientWidth ?? 0) / 2, (wrapRef.current?.clientHeight ?? 0) / 2)}>
           −
+        </button>
+      </div>
+
+      <div className="gap-controls" data-export-hide="">
+        <button
+          className="icon-btn zoom-btn"
+          title="ลดระยะห่างระหว่างชั้น ( [ )"
+          aria-label="ลดระยะห่างระหว่างชั้น"
+          disabled={gap <= COL_GAP_MIN}
+          onClick={() => onGapNudge(-1)}
+        >
+          −
+        </button>
+        <button
+          className="zoom-label gap-label"
+          title={`ระยะห่างระหว่างชั้น ${gap}px — กดเพื่อคืนค่าเดิม (${COL_GAP}px)`}
+          aria-label={`ระยะห่างระหว่างชั้น ${gap} พิกเซล กดเพื่อคืนค่าเดิม`}
+          onClick={onGapReset}
+        >
+          <GapIcon />
+          {gap}
+        </button>
+        <button
+          className="icon-btn zoom-btn"
+          title="เพิ่มระยะห่างระหว่างชั้น ( ] )"
+          aria-label="เพิ่มระยะห่างระหว่างชั้น"
+          disabled={gap >= COL_GAP_MAX}
+          onClick={() => onGapNudge(1)}
+        >
+          +
         </button>
       </div>
 

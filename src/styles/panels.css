@@ -463,6 +463,70 @@ body.is-moving-node .tree-root-drop.is-drop-target {
   box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text), 0 0 14px currentColor;
 }
 
+/* A colour the grid does not hold. The real <input type="color"> is stretched
+   over the whole label and made invisible, so it takes the click and the
+   keyboard focus; the label draws everything the eye sees. */
+.swatch-custom {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  height: 32px;
+  margin-top: 8px;
+  padding: 0 10px 0 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: border-color 0.14s ease, background 0.14s ease;
+}
+
+.swatch-custom:hover {
+  border-color: var(--border-strong);
+}
+
+.swatch-custom:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.swatch-custom input[type='color'] {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  opacity: 0;
+  cursor: pointer;
+}
+
+/* Until a custom colour is in use the chip is a colour wheel: it says "any". */
+.swatch-chip {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid rgb(var(--tint) / 0.2);
+  background: var(--wheel);
+}
+
+.swatch-custom.is-active .swatch-chip {
+  background: var(--chip);
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--text), 0 0 12px var(--chip);
+}
+
+.swatch-custom code {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
 .field-row {
   display: flex;
   gap: 6px;

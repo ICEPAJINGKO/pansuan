@@ -10,6 +10,11 @@
  * rgb(var(--tint) / 0.08).
  */
 
+/* The same in every theme: the colour wheel on the "pick your own" chip. */
+:root {
+  --wheel: conic-gradient(#f87171, #fbbf24, #a3e635, #34d399, #22d3ee, #818cf8, #e879f9, #f87171);
+}
+
 /* ---------- dusk: lifted dark, the default ---------- */
 :root,
 :root[data-theme='dusk'] {

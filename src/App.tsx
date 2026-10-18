@@ -6,6 +6,7 @@ import { Inspector } from './components/Inspector'
 import { SankeyCanvas } from './components/SankeyCanvas'
 import { usePortfolio } from './state/usePortfolio'
 import { useTheme } from './state/useTheme'
+import { useColumnGap } from './state/useColumnGap'
 import { useNodeDrag, type Placement } from './state/useNodeDrag'
 import { computeTree, createChildUnder, findNode, moveNodes, updateNode } from './model/portfolio'
 import { formatMoney } from './lib/format'
@@ -16,6 +17,7 @@ export type SelectHandler = (id: string | null, additive?: boolean) => void
 export default function App() {
   const api = usePortfolio()
   const themeApi = useTheme()
+  const columnGap = useColumnGap()
   const { portfolio } = api
   const [selection, setSelection] = useState<string[]>([])
   const [pending, setPending] = useState<Placement | null>(null)
@@ -117,6 +119,9 @@ export default function App() {
           onDragNode={drag.begin}
           dragRef={drag.activeRef}
           dragging={pending !== null}
+          gap={columnGap.gap}
+          onGapNudge={columnGap.nudge}
+          onGapReset={columnGap.reset}
           svgRef={svgRef}
         />
 

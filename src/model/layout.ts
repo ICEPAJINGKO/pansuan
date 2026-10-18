@@ -55,7 +55,16 @@ export const CARD_RADIUS = 14
  */
 export const CARD_TUCK = CARD_RADIUS + 2
 
+/**
+ * Space between one column and the next, where the ribbons run. This is only the
+ * default: the reader can widen or tighten it, within the bounds below. Even the
+ * tightest setting leaves the ribbons a visible run, since they already carry on
+ * under the cards at both ends.
+ */
 export const COL_GAP = 146
+export const COL_GAP_MIN = 40
+export const COL_GAP_MAX = 420
+export const COL_GAP_STEP = 20
 export const SIBLING_GAP = 14
 export const GROUP_GAP = 22
 /** Breathing room around the whole flow. */
@@ -67,8 +76,8 @@ export const MIN_HEIGHT = 460
 export const ROW_HEIGHT = MIN_NODE_H + SIBLING_GAP
 
 /** Column x for a given depth. */
-export function columnX(depth: number): number {
-  return PAD_X + depth * (NODE_W + COL_GAP)
+export function columnX(depth: number, gap = COL_GAP): number {
+  return PAD_X + depth * (NODE_W + gap)
 }
 
 interface Group {
@@ -82,7 +91,8 @@ interface Group {
   top: number
 }
 
-export function layoutSankey(tree: ComputedTree): SankeyLayout {
+/** `gap` is the horizontal run between columns; it moves nothing vertically. */
+export function layoutSankey(tree: ComputedTree, gap = COL_GAP): SankeyLayout {
   const nodes: SankeyNode[] = []
   const links: SankeyLink[] = []
   const byId = new Map<string, SankeyNode>()
@@ -146,29 +156,21 @@ export function layoutSankey(tree: ComputedTree): SankeyLayout {
       for (let i = 1; i < h.length; i++) offsets.push(offsets[i - 1] + h[i - 1] + SIBLING_GAP)
       group.offsets = offsets
       group.groupH = offsets[offsets.length - 1] + h[h.length - 1]
-      // Centre the group on the band of ribbons leaving the parent.
-      const bandH = h.reduce((a, b) => a + b, 0)
-      const parentTop = tops.get(group.parentId) ?? 0
-      group.desiredTop = parentTop - (group.groupH - bandH) / 2
+      // A group opens level with its parent's top edge and runs down from there.
+      // Centring it on the parent's ribbons would lift the first child above the
+      // parent whenever the children stack taller than the band they leave from.
+      group.desiredTop = tops.get(group.parentId) ?? 0
     }
 
     groups.sort((a, b) => a.desiredTop - b.desiredTop)
 
-    // Push down out of overlaps, then push back up if we ran off the bottom.
+    // Groups only ever move down to clear one another. Nothing pulls them back
+    // up when a column runs past the nominal height — the frame grows to follow
+    // the cards instead — so no child can end up higher than its parent.
     let cursor = 0
     for (const group of groups) {
       group.top = Math.max(group.desiredTop, cursor)
       cursor = group.top + group.groupH + GROUP_GAP
-    }
-    let limit = height
-    for (let i = groups.length - 1; i >= 0; i--) {
-      const group = groups[i]
-      if (group.top + group.groupH > limit) group.top = limit - group.groupH
-      limit = group.top - GROUP_GAP
-    }
-    if (groups.length && groups[0].top < 0) {
-      const shift = -groups[0].top
-      for (const group of groups) group.top += shift
     }
 
     for (const group of groups) {
@@ -187,7 +189,7 @@ export function layoutSankey(tree: ComputedTree): SankeyLayout {
       color: node.color,
       depth: node.depth,
       parentId: node.parentId,
-      x: columnX(node.depth),
+      x: columnX(node.depth, gap),
       y: tops.get(node.id) ?? 0,
       w: NODE_W,
       h,
@@ -224,7 +226,7 @@ export function layoutSankey(tree: ComputedTree): SankeyLayout {
     }
   }
 
-  const width = columnX(columns.length - 1) + NODE_W + LABEL_PAD
+  const width = columnX(columns.length - 1, gap) + NODE_W + LABEL_PAD
   // Minimum card heights can push a column past the nominal height; the frame
   // has to follow the cards, not the other way round.
   let bottom = height

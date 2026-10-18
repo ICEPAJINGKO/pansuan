@@ -214,14 +214,12 @@
   color: var(--warn);
 }
 
-.canvas-controls {
+/* Zoom sits on the right edge; the column spacing is a small strip of its own
+   in the corner above it, so the two do not read as one control. */
+.canvas-controls,
+.gap-controls {
   position: absolute;
-  right: 14px;
-  top: 50%;
-  transform: translateY(-50%);
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
   gap: 2px;
   padding: 5px;
   border-radius: 15px;
@@ -231,11 +229,34 @@
   z-index: 5;
 }
 
-.canvas-controls .zoom-btn {
-  width: 100%;
+.canvas-controls {
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.gap-controls {
+  right: 14px;
+  top: 14px;
+  flex-direction: row;
+  align-items: center;
+}
+
+.canvas-controls .zoom-btn,
+.gap-controls .zoom-btn {
   height: 32px;
   font-size: 20px;
   font-weight: 400;
+}
+
+.canvas-controls .zoom-btn {
+  width: 100%;
+}
+
+.gap-controls .zoom-btn {
+  width: 32px;
 }
 
 .zoom-label {
@@ -254,6 +275,21 @@
 .zoom-label:hover {
   background: rgb(var(--tint) / 0.14);
   color: var(--text);
+}
+
+/* After .zoom-label on purpose — same specificity, so the later rule wins. The
+   readout is wider than a zoom percentage: an arrow, then up to three digits. */
+.gap-label {
+  min-width: 64px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.gap-icon {
+  flex: none;
+  color: var(--text-dim);
 }
 
 .canvas-hint {

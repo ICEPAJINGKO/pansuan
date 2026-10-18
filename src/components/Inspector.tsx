@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import type { ComputedTree, Portfolio } from '../types'
 import type { PortfolioApi } from '../state/usePortfolio'
 import type { SelectHandler } from '../App'
@@ -20,7 +21,7 @@ import {
   updateNode,
 } from '../model/portfolio'
 import { formatMoney, formatPercent } from '../lib/format'
-import { PALETTE } from '../lib/palette'
+import { hex6, SWATCHES } from '../lib/palette'
 import { ValueField } from './ValueField'
 
 interface Props {
@@ -138,9 +139,6 @@ function NodeEditor({
   const index = siblings.findIndex((c) => c.id === id)
   const children = node.children
 
-  const set = (patch: Parameters<typeof updateNode>[2]) =>
-    api.commit((p) => ({ ...p, root: updateNode(p.root, id, patch) }))
-
   return (
     <aside className="panel panel-right">
       <div className="panel-head">
@@ -160,17 +158,7 @@ function NodeEditor({
           onChange={(e) => api.amend((p) => ({ ...p, root: updateNode(p.root, id, { name: e.target.value }) }))}
         />
 
-        <div className="swatch-grid" role="group" aria-label="สีของก้อนนี้">
-          {PALETTE.map((color) => (
-            <button
-              key={color}
-              className={`swatch-btn${node.color.toLowerCase() === color.toLowerCase() ? ' is-active' : ''}`}
-              style={{ background: color }}
-              title={color}
-              onClick={() => set({ color })}
-            />
-          ))}
-        </div>
+        <ColorPicker id={id} color={node.color} api={api} />
 
         <div className="field-row">
           <ValueField
@@ -313,6 +301,63 @@ function NodeEditor({
         </button>
       </div>
     </aside>
+  )
+}
+
+/**
+ * The preset grid, then a free picker for anything it does not hold. The native
+ * picker reports every step of a drag across its colour field, so it is given
+ * one undo step per opening rather than one per step — and only once something
+ * actually changed, which is why the checkpoint waits for the first change
+ * instead of running on open.
+ */
+function ColorPicker({ id, color, api }: { id: string; color: string; api: PortfolioApi }) {
+  const fresh = useRef(false)
+  const current = color.toLowerCase()
+  const isPreset = SWATCHES.includes(current)
+
+  return (
+    <>
+      <div className="swatch-grid" role="group" aria-label="สีของก้อนนี้">
+        {SWATCHES.map((swatch) => (
+          <button
+            key={swatch}
+            className={`swatch-btn${swatch === current ? ' is-active' : ''}`}
+            style={{ background: swatch }}
+            title={swatch}
+            aria-label={swatch}
+            aria-pressed={swatch === current}
+            onClick={() => api.commit((p) => ({ ...p, root: updateNode(p.root, id, { color: swatch }) }))}
+          />
+        ))}
+      </div>
+
+      <label
+        className={`swatch-custom${isPreset ? '' : ' is-active'}`}
+        style={{ '--chip': hex6(color) } as React.CSSProperties}
+      >
+        <span className="swatch-chip" aria-hidden="true" />
+        <span className="swatch-custom-text">เลือกสีเอง</span>
+        <code>{hex6(color)}</code>
+        {/* Covers the whole label, invisibly: the click lands on the real input. */}
+        <input
+          type="color"
+          value={hex6(color)}
+          aria-label="เลือกสีเอง"
+          onClick={() => {
+            fresh.current = true
+          }}
+          onChange={(e) => {
+            if (fresh.current) {
+              fresh.current = false
+              api.checkpoint()
+            }
+            const next = e.target.value
+            api.amend((p) => ({ ...p, root: updateNode(p.root, id, { color: next }) }))
+          }}
+        />
+      </label>
+    </>
   )
 }
 
